@@ -1,0 +1,58 @@
+.section {
+  padding: var(--amandi-section-padding) 0;
+  background: var(--amandi-cream);
+}
+
+.section .section-title {
+  color: var(--amandi-text-main);
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.card {
+  background: #fff;
+  padding: 2.5rem 2rem;
+  border-radius: var(--amandi-radius-lg);
+  border: 1px solid var(--amandi-border-soft);
+  box-shadow: var(--amandi-shadow-soft);
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+}
+
+.number {
+  font-family: var(--amandi-font-display);
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--amandi-green);
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-family: var(--amandi-font-display);
+  font-size: 1.5rem;
+  color: var(--amandi-text-main);
+  margin-bottom: 1rem;
+}
+
+.description {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--amandi-text-muted);
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+

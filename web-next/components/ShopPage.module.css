@@ -1,0 +1,167 @@
+.section {
+  padding: calc(var(--amandi-section-padding) + 2rem) 0 var(--amandi-section-padding);
+  background: var(--amandi-cream-soft);
+  min-height: 100vh;
+}
+
+.title {
+  font-family: var(--amandi-font-display);
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--amandi-green-deep);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: 1.5rem;
+  color: var(--amandi-text-main);
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.description {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--amandi-text-muted);
+  margin-bottom: 4rem;
+  text-align: center;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.categorySection {
+  margin-bottom: 4rem;
+}
+
+.categorySection:last-child {
+  margin-bottom: 0;
+}
+
+.categoryTitle {
+  font-family: var(--amandi-font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--amandi-green-deep);
+  margin-bottom: 2rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: var(--amandi-radius-lg);
+  border: 2px solid var(--amandi-border-soft);
+  box-shadow: var(--amandi-shadow-soft);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(9, 55, 33, 0.15);
+}
+
+.cardLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.imageContainer {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  background: var(--amandi-cream-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.icon {
+  font-size: 4rem;
+  display: none;
+}
+
+.cardContent {
+  padding: 1.5rem;
+}
+
+.productTitle {
+  font-family: var(--amandi-font-display);
+  font-size: 1.5rem;
+  color: var(--amandi-text-main);
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
+
+.productDescription {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--amandi-text-muted);
+  margin-bottom: 1rem;
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.price {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--amandi-green-deep);
+  font-family: var(--amandi-font-display);
+}
+
+.priceFrom {
+  font-size: 1.1rem;
+  color: var(--amandi-text-muted);
+  font-style: italic;
+}
+
+.unit {
+  font-size: 1rem;
+  color: var(--amandi-text-muted);
+}
+
+.inStock {
+  color: var(--amandi-green);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: calc(var(--amandi-section-padding) / 2 + 2rem) 0 calc(var(--amandi-section-padding) / 2);
+  }
+
+  .title {
+    font-size: 2.5rem;
+  }
+
+  .categoryTitle {
+    font-size: 2rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+

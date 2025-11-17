@@ -1,0 +1,118 @@
+.section {
+  padding: var(--amandi-section-padding) 0;
+  background: var(--amandi-cream-soft);
+}
+
+.section .section-title {
+  color: var(--amandi-text-main);
+  margin-bottom: 1.5rem;
+}
+
+.intro {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--amandi-text-main);
+  margin-bottom: 3rem;
+  max-width: 800px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.card {
+  background: #fff;
+  padding: 2rem;
+  border-radius: var(--amandi-radius-lg);
+  border: 1px solid var(--amandi-border-soft);
+  box-shadow: var(--amandi-shadow-soft);
+}
+
+.icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.name {
+  font-family: var(--amandi-font-display);
+  font-size: 1.5rem;
+  color: var(--amandi-text-main);
+  margin-bottom: 1.5rem;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detailRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detailLabel {
+  font-size: 0.85rem;
+  color: var(--amandi-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detailValue {
+  font-size: 1rem;
+  color: var(--amandi-text-main);
+  line-height: 1.5;
+}
+
+.calendarioSection {
+  background: #fff;
+  padding: 2rem;
+  border-radius: var(--amandi-radius-lg);
+  border: 1px solid var(--amandi-border-soft);
+  box-shadow: var(--amandi-shadow-soft);
+  margin-bottom: 2rem;
+}
+
+.calendarioTitle {
+  font-family: var(--amandi-font-display);
+  font-size: 1.5rem;
+  color: var(--amandi-text-main);
+  margin-bottom: 1.5rem;
+}
+
+.calendarioList {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.calendarioItem {
+  padding: 0.75rem;
+  background: var(--amandi-cream-soft);
+  border-radius: var(--amandi-radius-md);
+  color: var(--amandi-text-main);
+  font-size: 0.95rem;
+}
+
+.microCopy {
+  font-size: 0.9rem;
+  color: var(--amandi-text-muted);
+  font-style: italic;
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+

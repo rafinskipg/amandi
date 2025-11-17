@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand colors */
+  --amandi-green-deep: #0c5a35;
+  --amandi-green: #158647;
+  --amandi-green-soft: #dff2e2;
+  --amandi-yellow-warm: #f6cf63;
+  --amandi-yellow-soft: #fff3c7;
+  --amandi-orange: #f28a32;
+  --amandi-cream: #f7f0dd;
+  --amandi-cream-soft: #fbf7ec;
+  --amandi-text-main: #143021;
+  --amandi-text-muted: #4b6a55;
+  --amandi-border-soft: #e5e1d2;
+
+  /* Typography */
+  --amandi-font-display: "Recoleta", "Fraunces", "Georgia", serif;
+  --amandi-font-body: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+
+  /* Radii & shadows */
+  --amandi-radius-lg: 24px;
+  --amandi-radius-md: 16px;
+  --amandi-radius-pill: 999px;
+  --amandi-shadow-soft: 0 14px 30px rgba(9, 55, 33, 0.12);
+
+  /* Layout */
+  --amandi-max-width: 1120px;
+  --amandi-section-padding: 72px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--amandi-font-body);
+  background: var(--amandi-cream-soft);
+  color: var(--amandi-text-main);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: var(--amandi-max-width);
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.section-title {
+  font-family: var(--amandi-font-display);
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: var(--amandi-text-main);
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.section-subtitle {
+  font-size: 1.5rem;
+  color: var(--amandi-text-main);
+  margin-bottom: 2rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.95rem 2.4rem;
+  border-radius: var(--amandi-radius-pill);
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-size: 1rem;
+}
+
+.btn-primary {
+  background: var(--amandi-green);
+  color: #fff;
+  box-shadow: var(--amandi-shadow-soft);
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.9);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.btn-secondary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #fff;
+}
+
+@media (max-width: 768px) {
+  .section-title {
+    font-size: 2.5rem;
+  }
+  
+  .section-subtitle {
+    font-size: 1.2rem;
+  }
+}

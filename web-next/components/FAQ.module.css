@@ -1,0 +1,65 @@
+.section {
+  padding: var(--amandi-section-padding) 0;
+  background: var(--amandi-cream-soft);
+}
+
+.section .section-title {
+  color: var(--amandi-text-main);
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.list {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.item {
+  background: #fff;
+  border-radius: var(--amandi-radius-md);
+  border: 1px solid var(--amandi-border-soft);
+  box-shadow: var(--amandi-shadow-soft);
+  overflow: hidden;
+}
+
+.question {
+  width: 100%;
+  padding: 1.5rem;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--amandi-text-main);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+.question:hover {
+  background: var(--amandi-cream-soft);
+}
+
+.toggle {
+  font-size: 1.5rem;
+  color: var(--amandi-green);
+  font-weight: 300;
+  min-width: 30px;
+  text-align: right;
+}
+
+.answer {
+  padding: 0 1.5rem 1.5rem;
+  color: var(--amandi-text-muted);
+  line-height: 1.7;
+}
+
+.answer p {
+  margin: 0;
+}
+

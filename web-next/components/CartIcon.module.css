@@ -1,0 +1,74 @@
+.cartIcon {
+  background: var(--amandi-yellow-warm);
+  border-radius: var(--amandi-radius-pill);
+  border: 3px solid var(--amandi-green-deep);
+  box-shadow: var(--amandi-shadow-soft);
+  padding: 0.6rem 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  min-width: 50px;
+  height: 50px;
+  position: relative;
+}
+
+.cartIcon:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 35px rgba(9, 55, 33, 0.2);
+}
+
+.cartIconSymbol {
+  font-size: 1.5rem;
+  display: block;
+}
+
+.cartBadge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--amandi-orange);
+  color: #fff;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 2px solid var(--amandi-green-deep);
+  animation: bounceIn 0.3s ease;
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .cartIcon {
+    padding: 0.5rem 1rem;
+    min-width: 45px;
+    height: 45px;
+  }
+
+  .cartIconSymbol {
+    font-size: 1.25rem;
+  }
+
+  .cartBadge {
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+  }
+}
+

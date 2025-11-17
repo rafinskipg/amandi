@@ -1,0 +1,82 @@
+.section {
+  padding: var(--amandi-section-padding) 0;
+  background: var(--amandi-cream-soft);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 4rem;
+  align-items: center;
+}
+
+.text .section-title {
+  color: var(--amandi-text-main);
+  margin-bottom: 1.5rem;
+}
+
+.copy {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--amandi-text-main);
+  margin-bottom: 1rem;
+}
+
+.values {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.valueItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #fff;
+  border-radius: var(--amandi-radius-md);
+  border: 1px solid var(--amandi-border-soft);
+}
+
+.valueIcon {
+  font-size: 1.5rem;
+}
+
+.valueText {
+  font-size: 0.95rem;
+  color: var(--amandi-text-main);
+  font-weight: 500;
+}
+
+.image {
+  position: relative;
+}
+
+.imageContainer {
+  width: 100%;
+  position: relative;
+  border-radius: var(--amandi-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--amandi-shadow-soft);
+}
+
+.fincaImage {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .values {
+    grid-template-columns: 1fr;
+  }
+}
+
