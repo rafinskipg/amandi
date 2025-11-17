@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import CheckoutPage from '@/components/CheckoutPage'
+import CheckoutSuccess from '@/components/CheckoutSuccess'
 
 const languages = ['es', 'en', 'pt', 'fr', 'de', 'nl', 'da', 'sv', 'fi', 'no']
 
@@ -18,35 +18,28 @@ export async function generateMetadata({
   const resolvedParams = params instanceof Promise ? await params : params
   
   if (!languages.includes(resolvedParams.lang)) {
-    return {
-      title: 'Shopping Cart | Avocados Amandi',
-    }
+    notFound()
   }
 
   const isSpanish = resolvedParams.lang === 'es'
-  
+
   return {
     title: isSpanish 
-      ? 'Carrito de compra | Avocados Amandi' 
-      : 'Shopping Cart | Avocados Amandi',
+      ? 'Pedido completado - Avocados Amandi'
+      : 'Order completed - Avocados Amandi',
     description: isSpanish
-      ? 'Revisa tu pedido y completa la compra de aguacates ecológicos premium de Asturias.'
-      : 'Review your order and complete checkout for premium organic avocados from Asturias.',
+      ? 'Gracias por tu pedido. Te enviaremos un correo de confirmación pronto.'
+      : 'Thank you for your order. We will send you a confirmation email shortly.',
   }
 }
 
-export default async function Checkout({ 
+export default function CheckoutSuccessPage({ 
   params 
 }: { 
   params: { lang: string } | Promise<{ lang: string }> 
 }) {
-  const resolvedParams = params instanceof Promise ? await params : params
+  const resolvedParams = params instanceof Promise ? params : Promise.resolve(params)
   
-  // Validate language
-  if (!languages.includes(resolvedParams.lang)) {
-    notFound()
-  }
-  
-  return <CheckoutPage />
+  return <CheckoutSuccess params={resolvedParams} />
 }
 

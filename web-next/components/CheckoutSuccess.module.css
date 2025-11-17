@@ -1,0 +1,83 @@
+.section {
+  padding: 4rem 1rem;
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+}
+
+.successContainer {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+  background: #fff;
+  border-radius: var(--amandi-radius-lg);
+  border: 2px solid var(--amandi-border-soft);
+  padding: 3rem 2rem;
+  box-shadow: var(--amandi-shadow-soft);
+}
+
+.successIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--amandi-green);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0 auto 2rem;
+  border: 3px solid var(--amandi-green-deep);
+}
+
+.title {
+  font-family: var(--amandi-font-display);
+  font-size: 2.5rem;
+  color: var(--amandi-green-deep);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.message {
+  font-size: 1.1rem;
+  color: var(--amandi-text-muted);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.sessionId {
+  font-size: 0.9rem;
+  color: var(--amandi-text-muted);
+  font-family: monospace;
+  background: var(--amandi-cream-soft);
+  padding: 0.5rem 1rem;
+  border-radius: var(--amandi-radius);
+  margin-bottom: 2rem;
+  display: inline-block;
+}
+
+.actions {
+  margin-top: 2rem;
+}
+
+.shopButton {
+  display: inline-block;
+  padding: 1rem 2rem;
+  background: var(--amandi-green);
+  color: #fff;
+  border: 3px solid var(--amandi-green-deep);
+  border-radius: var(--amandi-radius-pill);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: var(--amandi-shadow-soft);
+}
+
+.shopButton:hover {
+  background: var(--amandi-green-deep);
+  transform: translateY(-2px);
+  box-shadow: var(--amandi-shadow);
+}
+

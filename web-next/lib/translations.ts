@@ -204,6 +204,54 @@ export const es = {
         cta: "Comprar aguacates ecológicos",
         imageAlt: "Aguacates ecológicos para embarazadas y bebés"
     },
+    checkout: {
+        title: "Carrito de compra",
+        emptyCart: "Tu carrito está vacío",
+        emptyText: "Agrega productos desde nuestra tienda para comenzar.",
+        goToShop: "Ir a la tienda",
+        orderSummary: "Resumen del pedido",
+        subtotal: "Subtotal",
+        shipping: "Envío",
+        shippingNote: "Se calculará al finalizar",
+        shippingAddress: "Dirección de envío",
+        total: "Total",
+        completeOrder: "Completar pedido",
+        processing: "Procesando...",
+        continueShopping: "← Continuar comprando",
+        quantity: "Cantidad",
+        unit: "Unidad",
+        priceOnRequest: "Precio a consultar",
+        remove: "Eliminar",
+        decreaseQuantity: "Reducir cantidad",
+        increaseQuantity: "Aumentar cantidad",
+        addressFields: {
+            fullName: "Nombre completo",
+            addressLine1: "Dirección",
+            addressLine2: "Dirección (línea 2)",
+            city: "Ciudad",
+            postalCode: "Código postal",
+            country: "País",
+            phone: "Teléfono (opcional)"
+        },
+        estimatedDelivery: "Entrega estimada",
+        errors: {
+            required: "Este campo es obligatorio",
+            invalidAddress: "Por favor completa todos los campos obligatorios de la dirección de envío.",
+            checkoutFailed: "Error al procesar el pago"
+        }
+    },
+    checkoutSuccess: {
+        title: "¡Pedido completado!",
+        message: "Gracias por tu pedido. Te enviaremos un correo de confirmación con los detalles de tu compra.",
+        sessionId: "ID de sesión",
+        continueShopping: "Seguir comprando"
+    },
+    checkoutCancel: {
+        title: "Pago cancelado",
+        message: "Tu pago fue cancelado. No se realizó ningún cargo. Puedes continuar comprando cuando estés listo.",
+        backToCart: "Volver al carrito",
+        continueShopping: "Seguir comprando"
+    },
     footer: {
         brand: "AVOCADOS AMANDI",
         tagline: "Desde la tierra buena, para la vida buena.",
@@ -419,6 +467,54 @@ export const en = {
         ],
         cta: "Buy organic avocados",
         imageAlt: "Organic avocados for pregnant women and babies"
+    },
+    checkout: {
+        title: "Shopping Cart",
+        emptyCart: "Your cart is empty",
+        emptyText: "Add products from our shop to get started.",
+        goToShop: "Go to shop",
+        orderSummary: "Order Summary",
+        subtotal: "Subtotal",
+        shipping: "Shipping",
+        shippingNote: "Calculated at checkout",
+        shippingAddress: "Shipping Address",
+        total: "Total",
+        completeOrder: "Complete order",
+        processing: "Processing...",
+        continueShopping: "← Continue shopping",
+        quantity: "Quantity",
+        unit: "Unit",
+        priceOnRequest: "Price on request",
+        remove: "Remove",
+        decreaseQuantity: "Decrease quantity",
+        increaseQuantity: "Increase quantity",
+        addressFields: {
+            fullName: "Full Name",
+            addressLine1: "Address Line 1",
+            addressLine2: "Address Line 2",
+            city: "City",
+            postalCode: "Postal Code",
+            country: "Country",
+            phone: "Phone (optional)"
+        },
+        estimatedDelivery: "Estimated delivery",
+        errors: {
+            required: "This field is required",
+            invalidAddress: "Please fill in all required shipping address fields.",
+            checkoutFailed: "Payment processing error"
+        }
+    },
+    checkoutSuccess: {
+        title: "Order completed!",
+        message: "Thank you for your order. We will send you a confirmation email with your purchase details.",
+        sessionId: "Session ID",
+        continueShopping: "Continue shopping"
+    },
+    checkoutCancel: {
+        title: "Payment cancelled",
+        message: "Your payment was cancelled. No charge was made. You can continue shopping when you're ready.",
+        backToCart: "Back to cart",
+        continueShopping: "Continue shopping"
     },
     footer: {
         brand: "AVOCADOS AMANDI",

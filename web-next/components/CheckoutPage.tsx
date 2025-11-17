@@ -1,23 +1,50 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
-import { es } from '@/lib/translations'
+import { es, en, type Translations } from '@/lib/translations'
 import { buildShopRoute, buildProductRoute } from '@/lib/routes'
 import type { AvocadoVariety } from '@/lib/varieties'
+import type { CountryCode } from '@/lib/countries'
+import { calculateShippingCost, getShippingCost } from '@/lib/shipping'
+import { countries } from '@/lib/countries'
 import LanguageSelector from './LanguageSelector'
 import ProductImage from './ProductImage'
 import styles from './CheckoutPage.module.css'
 
+
 export default function CheckoutPage() {
   const pathname = usePathname()
-  const { items, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart()
+  const { items, removeFromCart, updateQuantity, getTotalPrice, getTotalWeight, clearCart } = useCart()
+  const [isLoading, setIsLoading] = useState(false)
+  
+  // Load selected country from localStorage or default to 'es'
+  const [selectedCountry, setSelectedCountry] = useState<CountryCode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('amandi-selected-country')
+      if (saved && Object.values(countries).some(c => c.code === saved)) {
+        return saved as CountryCode
+      }
+    }
+    return 'es'
+  })
+  
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
+  
+  // Save country to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('amandi-selected-country', selectedCountry)
+    }
+  }, [selectedCountry])
 
   // Detect language
   const langMatch = pathname.match(/^\/(en|es)/)
   const lang = (langMatch ? langMatch[1] : 'es') as 'es' | 'en'
   const isSpanish = lang === 'es'
+  const t: Translations = isSpanish ? es : en
 
   const formatPrice = (price: number, currency: string = 'EUR') => {
     return new Intl.NumberFormat(lang === 'es' ? 'es-ES' : 'en-GB', {
@@ -30,7 +57,11 @@ export default function CheckoutPage() {
     return product.title?.[lang] || product.title?.en || 'Product'
   }
 
-  const total = getTotalPrice()
+  const subtotal = getTotalPrice()
+  const totalWeight = getTotalWeight()
+  const shippingCost = calculateShippingCost(selectedCountry, totalWeight, subtotal)
+  const total = subtotal + shippingCost
+  const shippingInfo = getShippingCost(selectedCountry)
 
   const handleQuantityChange = (productId: string, newQuantity: number, variety?: AvocadoVariety) => {
     if (newQuantity < 1) {
@@ -49,12 +80,87 @@ export default function CheckoutPage() {
     return isSpanish ? 'Lamb Hass' : 'Lamb Hass'
   }
 
-  const handleCompleteCheckout = () => {
-    // TODO: Navigate to payment/checkout flow
-    alert(isSpanish 
-      ? 'Redirigiendo al proceso de pago...' 
-      : 'Redirecting to payment process...'
-    )
+  const handleCompleteCheckout = async () => {
+    if (items.length === 0) return
+
+    setIsLoading(true)
+
+    try {
+      // Track checkout started event
+      try {
+        await fetch('/api/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'checkout_started',
+            metadata: {
+              itemCount: items.length,
+              subtotal: subtotal,
+              shippingCost: shippingCost,
+              total: total,
+            },
+          }),
+        })
+      } catch (error) {
+        console.error('Failed to track checkout_started event:', error)
+      }
+
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+      const successUrl = `${baseUrl}${pathname}/success?session_id={CHECKOUT_SESSION_ID}`
+      const cancelUrl = `${baseUrl}${pathname}`
+
+      // Validate country is selected
+      if (!selectedCountry) {
+        setCheckoutError(t.checkout.errors.required)
+        setIsLoading(false)
+        return
+      }
+
+      // Clear errors if validation passes
+      setCheckoutError(null)
+
+      // Only send product IDs, quantities, and varieties to reduce payload size
+      const checkoutItems = items.map(item => ({
+        productId: item.product.id,
+        quantity: item.quantity,
+        variety: item.variety || undefined,
+      }))
+
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: checkoutItems,
+          country: selectedCountry,
+          shippingCost,
+          totalWeight,
+          successUrl,
+          cancelUrl,
+          locale: lang,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session')
+      }
+
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error('No checkout URL received')
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error)
+      setCheckoutError(`${t.checkout.errors.checkoutFailed}: ${error.message}`)
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -63,29 +169,26 @@ export default function CheckoutPage() {
       <section className={styles.section}>
         <div className="container">
           <h1 className={styles.title}>
-            {isSpanish ? 'Carrito de compra' : 'Shopping Cart'}
+            {t.checkout.title}
           </h1>
 
           {items.length === 0 ? (
             <div className={styles.emptyCart}>
               <div className={styles.emptyIcon}>🛒</div>
               <h2 className={styles.emptyTitle}>
-                {isSpanish ? 'Tu carrito está vacío' : 'Your cart is empty'}
+                {t.checkout.emptyCart}
               </h2>
               <p className={styles.emptyText}>
-                {isSpanish 
-                  ? 'Agrega productos desde nuestra tienda para comenzar.'
-                  : 'Add products from our shop to get started.'
-                }
+                {t.checkout.emptyText}
               </p>
               <Link href={buildShopRoute(pathname)} className={styles.shopButton}>
-                {isSpanish ? 'Ir a la tienda' : 'Go to shop'}
+                {t.checkout.goToShop}
               </Link>
             </div>
           ) : (
-            <>
-              <div className={styles.cartContent}>
-                <div className={styles.itemsList}>
+            <div className={styles.cartContent}>
+              {/* Products List - Left Side */}
+              <div className={styles.itemsList}>
                   {items.map((item, index) => {
                     const product = item.product
                     const variety = item.variety
@@ -129,7 +232,7 @@ export default function CheckoutPage() {
                           </Link>
                           {product.unit && (
                             <p className={styles.itemUnit}>
-                              {isSpanish ? 'Unidad' : 'Unit'}: {product.unit}
+                              {t.checkout.unit}: {product.unit}
                             </p>
                           )}
                           {itemPrice > 0 ? (
@@ -138,20 +241,20 @@ export default function CheckoutPage() {
                             </p>
                           ) : (
                             <p className={styles.itemPrice}>
-                              {isSpanish ? 'Precio a consultar' : 'Price on request'}
+                              {t.checkout.priceOnRequest}
                             </p>
                           )}
                         </div>
 
                         <div className={styles.itemQuantity}>
                           <label className={styles.quantityLabel}>
-                            {isSpanish ? 'Cantidad' : 'Quantity'}
+                            {t.checkout.quantity}
                           </label>
                           <div className={styles.quantityControls}>
                             <button
                               className={styles.quantityButton}
                               onClick={() => handleQuantityChange(product.id, item.quantity - 1, variety)}
-                              aria-label={isSpanish ? 'Reducir cantidad' : 'Decrease quantity'}
+                              aria-label={t.checkout.decreaseQuantity}
                             >
                               −
                             </button>
@@ -168,7 +271,7 @@ export default function CheckoutPage() {
                             <button
                               className={styles.quantityButton}
                               onClick={() => handleQuantityChange(product.id, item.quantity + 1, variety)}
-                              aria-label={isSpanish ? 'Aumentar cantidad' : 'Increase quantity'}
+                              aria-label={t.checkout.increaseQuantity}
                             >
                               +
                             </button>
@@ -188,66 +291,117 @@ export default function CheckoutPage() {
                         <button
                           className={styles.removeButton}
                           onClick={() => removeFromCart(product.id, variety)}
-                          aria-label={isSpanish ? 'Eliminar producto' : 'Remove product'}
-                          title={isSpanish ? 'Eliminar' : 'Remove'}
+                          aria-label={t.checkout.remove}
+                          title={t.checkout.remove}
                         >
                           ✕
                         </button>
                       </div>
                     )
                   })}
-                </div>
+              </div>
 
-                <div className={styles.summary}>
-                  <div className={styles.summaryCard}>
-                    <h2 className={styles.summaryTitle}>
-                      {isSpanish ? 'Resumen del pedido' : 'Order Summary'}
-                    </h2>
-                    
-                    <div className={styles.summaryRow}>
-                      <span className={styles.summaryLabel}>
-                        {isSpanish ? 'Subtotal' : 'Subtotal'}
-                      </span>
-                      <span className={styles.summaryValue}>
-                        {formatPrice(total)}
-                      </span>
-                    </div>
-
-                    <div className={styles.summaryRow}>
-                      <span className={styles.summaryLabel}>
-                        {isSpanish ? 'Envío' : 'Shipping'}
-                      </span>
-                      <span className={styles.summaryValue}>
-                        {isSpanish ? 'Se calculará al finalizar' : 'Calculated at checkout'}
-                      </span>
-                    </div>
-
-                    <div className={styles.summaryDivider}></div>
-
-                    <div className={styles.summaryRow}>
-                      <span className={styles.summaryTotalLabel}>
-                        {isSpanish ? 'Total' : 'Total'}
-                      </span>
-                      <span className={styles.summaryTotalValue}>
-                        {formatPrice(total)}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={handleCompleteCheckout}
-                      className={styles.checkoutButton}
-                      disabled={items.length === 0}
+              {/* Summary and Country Selector - Right Side */}
+              <div className={styles.summary}>
+                <div className={styles.summaryCard}>
+                  <h2 className={styles.summaryTitle}>
+                    {t.checkout.orderSummary}
+                  </h2>
+                  
+                  {/* Country Selector */}
+                  <div className={styles.countrySelector}>
+                    <label className={styles.formLabel}>
+                      {t.checkout.addressFields.country} *
+                    </label>
+                    <select
+                      required
+                      value={selectedCountry}
+                      onChange={(e) => setSelectedCountry(e.target.value as CountryCode)}
+                      className={styles.formSelect}
                     >
-                      {isSpanish ? 'Completar pedido' : 'Complete order'}
-                    </button>
-
-                    <Link href={buildShopRoute(pathname)} className={styles.continueShopping}>
-                      {isSpanish ? '← Continuar comprando' : '← Continue shopping'}
-                    </Link>
+                      {Object.values(countries).map((country) => (
+                        <option key={country.code} value={country.code}>
+                          {country.name}
+                        </option>
+                      ))}
+                    </select>
+                    {totalWeight > 0 && (
+                      <p className={styles.weightInfo}>
+                        {isSpanish ? 'Peso total' : 'Total weight'}: {totalWeight.toFixed(2)} kg
+                      </p>
+                    )}
                   </div>
+
+                  <div className={styles.summaryDivider}></div>
+                  
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryLabel}>
+                      {t.checkout.subtotal}
+                    </span>
+                    <span className={styles.summaryValue}>
+                      {formatPrice(subtotal)}
+                    </span>
+                  </div>
+
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryLabel}>
+                      {t.checkout.shipping}
+                    </span>
+                    <span className={styles.summaryValue}>
+                      {shippingCost > 0 ? (
+                        <>
+                          {formatPrice(shippingCost)}
+                          <span className={styles.shippingDays}> ({shippingInfo.estimatedDays})</span>
+                        </>
+                      ) : (
+                        <span className={styles.freeShipping}>
+                          {isSpanish ? 'Envío gratis' : 'Free shipping'}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+
+                  {shippingInfo.freeShippingThreshold && subtotal < shippingInfo.freeShippingThreshold && (
+                    <p className={styles.freeShippingNote}>
+                      {isSpanish 
+                        ? `Añade ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} más para envío gratis`
+                        : `Add ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} more for free shipping`
+                      }
+                    </p>
+                  )}
+
+                  <div className={styles.summaryDivider}></div>
+
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryTotalLabel}>
+                      {t.checkout.total}
+                    </span>
+                    <span className={styles.summaryTotalValue}>
+                      {formatPrice(total)}
+                    </span>
+                  </div>
+
+                  {checkoutError && (
+                    <div className={styles.checkoutError}>
+                      <span className={styles.errorIcon}>⚠️</span>
+                      <span>{checkoutError}</span>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleCompleteCheckout}
+                    className={styles.checkoutButton}
+                    disabled={items.length === 0 || isLoading}
+                  >
+                    {isLoading ? t.checkout.processing : t.checkout.completeOrder}
+                  </button>
+
+                  <Link href={buildShopRoute(pathname)} className={styles.continueShopping}>
+                    {t.checkout.continueShopping}
+                  </Link>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </section>

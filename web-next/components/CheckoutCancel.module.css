@@ -1,0 +1,92 @@
+.section {
+  padding: 4rem 1rem;
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+}
+
+.cancelContainer {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+  background: #fff;
+  border-radius: var(--amandi-radius-lg);
+  border: 2px solid var(--amandi-border-soft);
+  padding: 3rem 2rem;
+  box-shadow: var(--amandi-shadow-soft);
+}
+
+.cancelIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--amandi-orange);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0 auto 2rem;
+  border: 3px solid var(--amandi-orange-deep);
+}
+
+.title {
+  font-family: var(--amandi-font-display);
+  font-size: 2.5rem;
+  color: var(--amandi-text-main);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.message {
+  font-size: 1.1rem;
+  color: var(--amandi-text-muted);
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.checkoutButton,
+.shopButton {
+  display: inline-block;
+  padding: 1rem 2rem;
+  border-radius: var(--amandi-radius-pill);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: var(--amandi-shadow-soft);
+}
+
+.checkoutButton {
+  background: var(--amandi-green);
+  color: #fff;
+  border: 3px solid var(--amandi-green-deep);
+}
+
+.checkoutButton:hover {
+  background: var(--amandi-green-deep);
+  transform: translateY(-2px);
+  box-shadow: var(--amandi-shadow);
+}
+
+.shopButton {
+  background: #fff;
+  color: var(--amandi-green-deep);
+  border: 3px solid var(--amandi-green-deep);
+}
+
+.shopButton:hover {
+  background: var(--amandi-cream-soft);
+  transform: translateY(-2px);
+  box-shadow: var(--amandi-shadow);
+}
+

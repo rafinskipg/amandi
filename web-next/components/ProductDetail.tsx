@@ -73,19 +73,39 @@ export default function ProductDetail({ product, translations }: Props) {
     return p.title[lang] || p.title.en
   }
 
-  const handleCheckout = () => {
-    const checkoutBase = buildCheckoutRoute(pathname)
-    if (product.type === 'box' && product.id === 'subscription') {
-      window.location.href = `${checkoutBase}?type=subscription`
-    } else if (product.type === 'box') {
-      const varietyParam = isAvocadoBox ? `&variety=${selectedVariety}` : ''
-      window.location.href = `${checkoutBase}?product=${product.id}${varietyParam}`
+  const handleCheckout = async () => {
+    // Add product to cart first
+    if (isAvocadoBox) {
+      addToCart(product, 1, selectedVariety)
     } else {
-      window.location.href = `${checkoutBase}?product=${product.id}`
+      addToCart(product, 1)
     }
+    
+    // Track add-to-cart event
+    try {
+      await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'add_to_cart',
+          productId: product.id,
+          productName: title,
+          quantity: 1,
+          variety: isAvocadoBox ? selectedVariety : undefined,
+        }),
+      })
+    } catch (error) {
+      console.error('Failed to track add-to-cart event:', error)
+    }
+    
+    // Then redirect to checkout
+    const checkoutBase = buildCheckoutRoute(pathname)
+    window.location.href = checkoutBase
   }
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (isAnimating) return // Prevent multiple clicks during animation
     
     // Add to cart immediately
@@ -93,6 +113,25 @@ export default function ProductDetail({ product, translations }: Props) {
       addToCart(product, 1, selectedVariety)
     } else {
       addToCart(product, 1)
+    }
+    
+    // Track add-to-cart event
+    try {
+      await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'add_to_cart',
+          productId: product.id,
+          productName: title,
+          quantity: 1,
+          variety: isAvocadoBox ? selectedVariety : undefined,
+        }),
+      })
+    } catch (error) {
+      console.error('Failed to track add-to-cart event:', error)
     }
     
     setIsAnimating(true)

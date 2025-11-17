@@ -15,6 +15,7 @@ export interface Product {
   }
   price: number
   currency?: string
+  weight?: number // Weight in kg
   images: string[]
   icon?: string
   unit?: string
@@ -41,6 +42,7 @@ export const products: Product[] = [
     },
     price: 18, // 3kg × 6€/kg
     currency: 'EUR',
+    weight: 3, // 3 kg
     images: ['/assets/products/box3kg.png'],
     icon: '📦',
     unit: 'box',
@@ -64,6 +66,7 @@ export const products: Product[] = [
     },
     price: 30, // 5kg × 6€/kg
     currency: 'EUR',
+    weight: 5, // 5 kg
     images: ['/assets/products/box5kg.png'],
     icon: '📦',
     unit: 'box',
@@ -87,6 +90,7 @@ export const products: Product[] = [
     },
     price: 43.2, // (18 + 30) × 0.9 = 43.2€ (2 boxes with 10% discount)
     currency: 'EUR',
+    weight: 8, // 3kg + 5kg = 8kg total
     images: ['/assets/products/suscription.png'],
     icon: '🌱',
     unit: 'year',
@@ -111,6 +115,7 @@ export const products: Product[] = [
     },
     price: 35,
     currency: 'EUR',
+    weight: 0.8, // 800g
     images: ['/assets/products/board.png'],
     icon: '🪵',
     unit: 'unit',
@@ -134,6 +139,7 @@ export const products: Product[] = [
     },
     price: 10,
     currency: 'EUR',
+    weight: 0.5, // 500ml
     images: ['/assets/products/oliveoil.png'],
     icon: '🫒',
     unit: '500ml',
@@ -157,6 +163,7 @@ export const products: Product[] = [
     },
     price: 12,
     currency: 'EUR',
+    weight: 0.2, // 200g
     images: ['/assets/products/totebag.png'],
     icon: '👜',
     unit: 'unit',
@@ -180,6 +187,7 @@ export const products: Product[] = [
     },
     price: 8,
     currency: 'EUR',
+    weight: 1, // 1kg
     images: ['/assets/products/lemons.png'],
     icon: '🍋',
     unit: '1kg',
@@ -203,6 +211,7 @@ export const products: Product[] = [
     },
     price: 15,
     currency: 'EUR',
+    weight: 0.65, // 650g
     images: ['/assets/products/verdinas.png'],
     icon: '🫘',
     unit: '650g',
@@ -226,6 +235,7 @@ export const products: Product[] = [
     },
     price: 10,
     currency: 'EUR',
+    weight: 0.5, // 500g
     images: ['/assets/products/honey.png'],
     icon: '🍯',
     unit: '500g',
@@ -249,6 +259,7 @@ export const products: Product[] = [
     },
     price: 12,
     currency: 'EUR',
+    weight: 1, // 1kg
     images: ['/assets/products/hazelnuts.png'],
     icon: '🌰',
     unit: '1kg',

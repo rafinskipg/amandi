@@ -93,7 +93,9 @@
 }
 
 .itemImage {
+  position: relative;
   width: 120px;
+  height: 180px;
   aspect-ratio: 2 / 3;
   border-radius: var(--amandi-radius-md);
   overflow: hidden;
@@ -101,6 +103,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .itemIcon {
@@ -342,6 +345,80 @@
 
 .continueShopping:hover {
   color: var(--amandi-green-deep);
+}
+
+.countrySelector {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--amandi-border-soft);
+}
+
+.formLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--amandi-text-main);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.formSelect {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--amandi-border-soft);
+  border-radius: var(--amandi-radius-md);
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+  font-family: inherit;
+  background: #fff;
+}
+
+.formSelect:focus {
+  outline: none;
+  border-color: var(--amandi-green);
+}
+
+.weightInfo {
+  font-size: 0.85rem;
+  color: var(--amandi-text-muted);
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}
+
+.freeShipping {
+  color: var(--amandi-green-deep);
+  font-weight: 600;
+}
+
+.freeShippingNote {
+  font-size: 0.9rem;
+  color: var(--amandi-text-muted);
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+  font-style: italic;
+}
+
+.checkoutError {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fff5f0;
+  border: 2px solid var(--amandi-orange);
+  border-radius: var(--amandi-radius-md);
+  color: var(--amandi-orange-deep);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.errorIcon {
+  font-size: 1.2rem;
+}
+
+.shippingDays {
+  font-size: 0.9rem;
+  color: var(--amandi-text-muted);
+  font-weight: 400;
 }
 
 @media (max-width: 968px) {
