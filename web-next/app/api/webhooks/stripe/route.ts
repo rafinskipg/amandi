@@ -16,13 +16,33 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 // Stripe webhook secret - in production, get this from environment variables
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
+// CRITICAL: Handle GET request - Stripe or Vercel may send GET to verify endpoint
+// This prevents 307 redirects when the endpoint is accessed via GET
+export async function GET(request: NextRequest) {
+  console.log('[Webhook] Received GET request (verification/health check)')
+  console.log('[Webhook] URL:', request.url)
+  console.log('[Webhook] User-Agent:', request.headers.get('user-agent'))
+  
+  // Return 200 OK to indicate endpoint exists and is healthy
+  // This prevents 307 redirects
+  return NextResponse.json(
+    { 
+      status: 'ok',
+      message: 'Stripe webhook endpoint is active',
+      method: 'GET',
+      timestamp: new Date().toISOString()
+    },
+    { status: 200 }
+  )
+}
+
 // CRITICAL: Handle OPTIONS request for CORS preflight (Vercel may send this)
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, stripe-signature',
     },
   })
