@@ -65,14 +65,24 @@ export async function POST(request: NextRequest) {
         let existingOrder = null
 
         if (session.client_reference_id) {
+          console.log('[Webhook] Looking for order by client_reference_id:', session.client_reference_id)
           existingOrder = await db.getOrderById(session.client_reference_id)
-          console.log('[Webhook] Found order by client_reference_id:', session.client_reference_id, existingOrder?.orderNumber)
+          if (existingOrder) {
+            console.log('[Webhook] ✓ Found order by client_reference_id:', existingOrder.orderNumber)
+          } else {
+            console.log('[Webhook] ✗ Order not found by client_reference_id:', session.client_reference_id)
+          }
         }
 
         // Fallback to sessionId lookup
         if (!existingOrder) {
+          console.log('[Webhook] Looking for order by sessionId:', session.id)
           existingOrder = await db.getOrderBySessionId(session.id)
-          console.log('[Webhook] Found order by sessionId:', session.id, existingOrder?.orderNumber)
+          if (existingOrder) {
+            console.log('[Webhook] ✓ Found order by sessionId:', existingOrder.orderNumber)
+          } else {
+            console.log('[Webhook] ✗ Order not found by sessionId:', session.id)
+          }
         }
 
         // If order exists, update it to completed (webhook has priority)
@@ -136,6 +146,7 @@ export async function POST(request: NextRequest) {
 
         // If order doesn't exist (shouldn't happen with new flow, but handle gracefully)
         console.warn('[Webhook] Order not found for session:', session.id, 'client_reference_id:', session.client_reference_id)
+        console.warn('[Webhook] This should not happen with the new flow. Creating order as fallback...')
 
         // Retrieve the session with line items to create order
         const sessionWithLineItems = await stripe.checkout.sessions.retrieve(
@@ -146,38 +157,70 @@ export async function POST(request: NextRequest) {
         )
 
         const lineItems = sessionWithLineItems.line_items?.data || []
+        console.log('[Webhook] Retrieved', lineItems.length, 'line items from Stripe')
 
         // Parse items from metadata
         let items: any[] = []
         try {
           if (session.metadata?.items) {
             items = JSON.parse(session.metadata.items)
+            console.log('[Webhook] Parsed', items.length, 'items from metadata')
+          } else {
+            console.warn('[Webhook] No items in metadata!')
           }
         } catch (e) {
           console.error('[Webhook] Error parsing items metadata:', e)
         }
 
         // Map lineItems to orderItems, filtering out shipping
-        // Shipping is a line item but not in metadata.items, so we need to filter it out
+        // Match by productId from metadata instead of using index
         const orderItems = lineItems
-          .map((item, index) => {
-            // Skip shipping line items (they don't have productId in metadata)
-            const metadataItem = items[index]
+          .map((lineItem) => {
+            // Try to find matching metadata item by productId
+            // Check if lineItem has product metadata or match by description
+            const lineItemProductId = (lineItem as any).price?.product || lineItem.description
+
+            // Find matching metadata item
+            const metadataItem = items.find((item: any) => {
+              // Try to match by productId or by checking if this is a product line item
+              return item.productId && lineItem.description &&
+                (lineItem.description.toLowerCase().includes(item.productId.toLowerCase()) ||
+                  lineItemProductId === item.productId)
+            })
+
+            // Skip if no metadata item found (likely shipping or other non-product item)
             if (!metadataItem || !metadataItem.productId) {
-              // This is likely shipping, skip it
-              return null
+              // Check if this is clearly a shipping item
+              if (lineItem.description?.toLowerCase().includes('shipping') ||
+                lineItem.description?.toLowerCase().includes('delivery') ||
+                lineItem.description?.toLowerCase().includes('envío')) {
+                return null
+              }
+              // If we have items in metadata but this doesn't match, skip it
+              if (items.length > 0) {
+                return null
+              }
             }
+
             return {
-              productId: metadataItem.productId,
-              productName: item.description || 'Unknown Product',
-              quantity: item.quantity || 1,
-              price: (item.price?.unit_amount || 0) / 100,
-              variety: metadataItem.variety || undefined,
+              productId: metadataItem?.productId || 'unknown',
+              productName: lineItem.description || 'Unknown Product',
+              quantity: lineItem.quantity || 1,
+              price: (lineItem.price?.unit_amount || 0) / 100,
+              variety: metadataItem?.variety || undefined,
             }
           })
-          .filter((item): item is NonNullable<typeof item> => item !== null)
+          .filter((item): item is NonNullable<typeof item> => item !== null && item.productId !== 'unknown')
+
+        console.log('[Webhook] Mapped', orderItems.length, 'order items from', lineItems.length, 'line items')
+
+        if (orderItems.length === 0) {
+          console.error('[Webhook] No valid order items found! Cannot create order.')
+          throw new Error('No valid order items found in webhook payload')
+        }
 
         // Create order as fallback (shouldn't happen with new flow)
+        console.log('[Webhook] Creating order with', orderItems.length, 'items, total:', (session.amount_total || 0) / 100)
         const order = await db.createOrder({
           stripeSessionId: session.id,
           customerEmail: session.customer_email || session.customer_details?.email || undefined,
