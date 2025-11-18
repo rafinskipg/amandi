@@ -102,6 +102,7 @@ model Event {
 
 enum OrderStatus {
   pending
+  payment_received
   completed
   failed
   delivered

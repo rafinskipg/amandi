@@ -168,6 +168,8 @@ export default function TrackOrder({ initialOrderNumber }: TrackOrderProps = {})
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'payment_received':
+        return '#10b981' // green
       case 'completed':
         return '#10b981' // green
       case 'delivered':

@@ -56,7 +56,7 @@ export async function PATCH(
       )
     }
 
-    const validStatuses = ['pending', 'completed', 'failed', 'delivered']
+    const validStatuses = ['pending', 'payment_received', 'completed', 'failed', 'delivered']
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
         { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },

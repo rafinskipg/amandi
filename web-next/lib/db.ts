@@ -19,7 +19,7 @@ export interface Order {
   items: OrderItem[]
   total: number
   currency: string
-  status: 'pending' | 'completed' | 'failed' | 'delivered'
+  status: 'pending' | 'payment_received' | 'completed' | 'failed' | 'delivered'
   createdAt: Date
   completedAt?: Date
 }
@@ -334,7 +334,7 @@ export const db = {
   getCompletedOrders: async (): Promise<Order[]> => {
     const orders = await prisma.order.findMany({
       where: {
-        status: 'completed',
+        status: { in: ['payment_received', 'completed'] },
       },
       include: {
         items: true,
@@ -494,10 +494,10 @@ export const db = {
       addToCartEvents,
     ] = await Promise.all([
       prisma.order.count(),
-      prisma.order.count({ where: { status: 'completed' } }),
+      prisma.order.count({ where: { status: { in: ['payment_received', 'completed'] } } }),
       prisma.order.aggregate({
         where: { 
-          status: { in: ['completed', 'delivered'] } // Count both completed and delivered orders for revenue
+          status: { in: ['payment_received', 'completed', 'delivered'] } // Count payment_received, completed and delivered orders for revenue
         },
         _sum: { total: true },
       }),

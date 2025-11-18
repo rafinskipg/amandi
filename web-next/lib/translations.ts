@@ -293,6 +293,7 @@ export const es = {
         },
         status: {
             pending: "Pendiente",
+            payment_received: "Pago recibido, esperando envío",
             completed: "Completado",
             delivered: "Entregado",
             failed: "Fallido"
@@ -595,6 +596,7 @@ export const en = {
         },
         status: {
             pending: "Pending",
+            payment_received: "Payment received, awaiting delivery",
             completed: "Completed",
             delivered: "Delivered",
             failed: "Failed"

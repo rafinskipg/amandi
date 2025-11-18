@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Legacy endpoints for backward compatibility
-    if (status === 'completed') {
+    if (status === 'completed' || status === 'payment_received') {
       const orders = await db.getCompletedOrders()
       return NextResponse.json({ orders, total: orders.length, page: 1, totalPages: 1 })
     }

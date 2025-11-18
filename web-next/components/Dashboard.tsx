@@ -50,7 +50,7 @@ interface Order {
   }>
   total: number
   currency: string
-  status: 'pending' | 'completed' | 'failed' | 'delivered'
+  status: 'pending' | 'payment_received' | 'completed' | 'failed' | 'delivered'
   createdAt: string
   completedAt?: string
 }
@@ -335,8 +335,8 @@ export default function Dashboard({ onLogout }: DashboardProps) {
       }
 
       // Create status log and event for status change
-      if (newStatus === 'completed' && order?.status === 'pending') {
-        // If marking pending order as completed, create checkout_completed event
+      if ((newStatus === 'payment_received' || newStatus === 'completed') && order?.status === 'pending') {
+        // If marking pending order as payment_received/completed, create checkout_completed event
         await fetch(`/api/events`, {
           method: 'POST',
           headers: {
@@ -439,6 +439,8 @@ export default function Dashboard({ onLogout }: DashboardProps) {
 
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
+      case 'payment_received':
+        return '#10b981' // green
       case 'completed':
         return '#10b981' // green
       case 'delivered':
@@ -627,6 +629,7 @@ export default function Dashboard({ onLogout }: DashboardProps) {
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
+                  <option value="payment_received">Payment Received</option>
                   <option value="completed">Completed</option>
                   <option value="delivered">Delivered</option>
                   <option value="failed">Failed</option>
@@ -752,29 +755,20 @@ export default function Dashboard({ onLogout }: DashboardProps) {
                             </button>
                             {order.status === 'pending' && (
                               <button
-                                onClick={() => handleStatusChange(order.id, 'completed')}
+                                onClick={() => handleStatusChange(order.id, 'payment_received')}
                                 disabled={updatingOrderId === order.id}
                                 className={styles.statusButton}
                               >
-                                {updatingOrderId === order.id ? '...' : 'Mark as Completed'}
+                                {updatingOrderId === order.id ? '...' : 'Mark as Payment Received'}
                               </button>
                             )}
-                            {order.status === 'completed' && (
+                            {(order.status === 'payment_received' || order.status === 'completed') && (
                               <button
                                 onClick={() => handleStatusChange(order.id, 'delivered')}
                                 disabled={updatingOrderId === order.id}
                                 className={styles.statusButton}
                               >
                                 {updatingOrderId === order.id ? '...' : 'Mark as Delivered'}
-                              </button>
-                            )}
-                            {order.status === 'delivered' && (
-                              <button
-                                onClick={() => handleStatusChange(order.id, 'completed')}
-                                disabled={updatingOrderId === order.id}
-                                className={styles.statusButton}
-                              >
-                                {updatingOrderId === order.id ? '...' : 'Mark as Completed'}
                               </button>
                             )}
                           </div>

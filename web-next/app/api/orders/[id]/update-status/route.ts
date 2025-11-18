@@ -30,11 +30,11 @@ export async function POST(
       )
     }
 
-    // If order is already completed (webhook got there first), return success
-    if (order.status === 'completed') {
+    // If order is already payment_received or completed (webhook got there first), return success
+    if (order.status === 'payment_received' || order.status === 'completed') {
       return NextResponse.json({
         order,
-        message: 'Order already completed by webhook'
+        message: 'Order already processed by webhook'
       })
     }
 

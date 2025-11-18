@@ -197,9 +197,9 @@ export async function POST(request: NextRequest) {
             hasShippingAddress: !!shippingAddress,
           })
 
-          // Update order status to completed and add customer info + shipping address
+          // Update order status to payment_received and add customer info + shipping address
           const updatedOrder = await db.updateOrder(existingOrder.id, {
-            status: 'completed',
+            status: 'payment_received',
             completedAt: new Date(),
             customerEmail: customerEmail,
             customerPhone: customerPhone || existingOrder.customerPhone,
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
           })
 
           // Create status log for payment confirmation
-          if (existingOrder.status !== 'completed') {
+          if (existingOrder.status !== 'payment_received' && existingOrder.status !== 'completed') {
             await db.createStatusLog({
               orderId: updatedOrder!.id,
               status: 'payment_confirmed',
@@ -359,7 +359,7 @@ export async function POST(request: NextRequest) {
           items: orderItems,
           total: (session.amount_total || 0) / 100,
           currency: session.currency || 'eur',
-          status: 'completed',
+          status: 'payment_received',
           completedAt: new Date(),
         })
 
@@ -422,9 +422,9 @@ export async function POST(request: NextRequest) {
       const existingOrder = await db.getOrderBySessionId(session.id)
 
       if (existingOrder) {
-        // Update order status to completed
+        // Update order status to payment_received
         await db.updateOrder(existingOrder.id, {
-          status: 'completed',
+          status: 'payment_received',
           completedAt: new Date(),
         })
       }
