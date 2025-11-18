@@ -38,19 +38,44 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
     const sessionIdParam = searchParams.get('session_id')
     if (sessionIdParam) {
       setSessionId(sessionIdParam)
-      // Fetch order info by session ID
-      fetch(`/api/orders?sessionId=${sessionIdParam}`)
-        .then(res => res.json())
-        .then(data => {
+      
+      // Retry mechanism to fetch order (webhook might take a moment to process)
+      let attempts = 0
+      const maxAttempts = 10
+      const retryDelay = 1000 // 1 second
+      
+      const fetchOrder = async () => {
+        try {
+          const res = await fetch(`/api/orders?sessionId=${sessionIdParam}`)
+          const data = await res.json()
+          
           if (data.order && data.order.orderNumber) {
             setOrderInfo({
               orderNumber: data.order.orderNumber,
               status: data.order.status,
             })
+            setLoading(false)
+          } else if (attempts < maxAttempts) {
+            // Order not created yet, retry after delay
+            attempts++
+            setTimeout(fetchOrder, retryDelay)
+          } else {
+            // Max attempts reached, stop loading
+            setLoading(false)
           }
-        })
-        .catch(err => console.error('Error fetching order:', err))
-        .finally(() => setLoading(false))
+        } catch (err) {
+          console.error('Error fetching order:', err)
+          if (attempts < maxAttempts) {
+            attempts++
+            setTimeout(fetchOrder, retryDelay)
+          } else {
+            setLoading(false)
+          }
+        }
+      }
+      
+      // Start fetching
+      fetchOrder()
     } else {
       setLoading(false)
     }
@@ -92,9 +117,16 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
                 </p>
               </div>
             ) : sessionId ? (
-              <p className={styles.sessionId}>
-                {t.checkoutSuccess.sessionId}: {sessionId.slice(0, 20)}...
-              </p>
+              <div className={styles.orderInfo}>
+                <p className={styles.loadingText}>
+                  {isSpanish 
+                    ? 'Procesando tu pedido... El número de pedido aparecerá en breve. Si no aparece, puedes usar el ID de sesión para contactarnos.'
+                    : 'Processing your order... Your order number will appear shortly. If it doesn\'t appear, you can use the session ID to contact us.'}
+                </p>
+                <p className={styles.sessionId}>
+                  {isSpanish ? 'ID de sesión' : 'Session ID'}: {sessionId}
+                </p>
+              </div>
             ) : null}
             <div className={styles.actions}>
               <Link href={buildShopRoute(pathname)} className={styles.shopButton}>

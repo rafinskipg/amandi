@@ -7,9 +7,18 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 
 // Stripe webhook secret - in production, get this from environment variables
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
 export async function POST(request: NextRequest) {
+  // Validate webhook secret is configured
+  if (!webhookSecret) {
+    console.error('STRIPE_WEBHOOK_SECRET is not set! Webhook verification will fail.')
+    return NextResponse.json(
+      { error: 'Webhook secret not configured' },
+      { status: 500 }
+    )
+  }
+
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
 

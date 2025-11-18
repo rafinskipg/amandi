@@ -522,19 +522,44 @@ export const db = {
 
   // Metrics
   getMetrics: async () => {
-    const [allEvents, allOrders, addToCartEvents, checkoutStarted, checkoutCompleted, checkoutCancelled, chatbotUsed, completedOrders] = await Promise.all([
-      prisma.event.findMany(),
-      prisma.order.findMany(),
-      prisma.event.findMany({ where: { type: 'add_to_cart' } }),
+    // Use counts and aggregations instead of loading all data
+    const [
+      totalOrders,
+      completedOrdersCount,
+      totalRevenueResult,
+      addToCartCount,
+      checkoutStarted,
+      checkoutCompleted,
+      checkoutCancelled,
+      chatbotUsed,
+      addToCartEvents,
+    ] = await Promise.all([
+      prisma.order.count(),
+      prisma.order.count({ where: { status: 'completed' } }),
+      prisma.order.aggregate({
+        where: { status: 'completed' },
+        _sum: { total: true },
+      }),
+      prisma.event.count({ where: { type: 'add_to_cart' } }),
       prisma.event.count({ where: { type: 'checkout_started' } }),
       prisma.event.count({ where: { type: 'checkout_completed' } }),
       prisma.event.count({ where: { type: 'checkout_cancelled' } }),
       prisma.event.count({ where: { type: 'chatbot_used' } }),
-      prisma.order.findMany({ where: { status: 'completed' } }),
+      // Only fetch add_to_cart events for product stats (limit to recent ones if needed)
+      prisma.event.findMany({
+        where: { type: 'add_to_cart' },
+        select: {
+          productId: true,
+          productName: true,
+          quantity: true,
+        },
+        take: 10000, // Limit to prevent memory issues
+      }),
     ])
 
-    const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0)
+    const totalRevenue = totalRevenueResult._sum.total || 0
 
+    // Calculate product stats from fetched events
     const productStats = addToCartEvents.reduce((acc, event) => {
       if (event.productId) {
         if (!acc[event.productId]) {
@@ -552,10 +577,10 @@ export const db = {
     }, {} as Record<string, { productId: string; productName: string; addToCartCount: number; totalQuantity: number }>)
 
     return {
-      totalOrders: allOrders.length,
-      completedOrders: completedOrders.length,
+      totalOrders,
+      completedOrders: completedOrdersCount,
       totalRevenue,
-      addToCartCount: addToCartEvents.length,
+      addToCartCount,
       checkoutStarted,
       checkoutCompleted,
       checkoutCancelled,
