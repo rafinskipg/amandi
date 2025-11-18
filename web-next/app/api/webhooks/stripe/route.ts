@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { db } from '@/lib/db'
 
+// Configure runtime - important for webhooks to avoid redirects
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-10-29.clover',
 })
@@ -14,6 +18,10 @@ export async function POST(request: NextRequest) {
   console.log('[Webhook] Received POST request')
   console.log('[Webhook] URL:', request.url)
   console.log('[Webhook] Method:', request.method)
+  console.log('[Webhook] Headers:', {
+    'content-type': request.headers.get('content-type'),
+    'stripe-signature': request.headers.get('stripe-signature') ? 'present' : 'missing',
+  })
 
   // Validate webhook secret is configured
   if (!webhookSecret) {
@@ -24,6 +32,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // Get raw body as text (important for signature verification)
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
 
@@ -31,6 +40,7 @@ export async function POST(request: NextRequest) {
   console.log('[Webhook] Has signature:', !!signature)
 
   if (!signature) {
+    console.error('[Webhook] Missing stripe-signature header')
     return NextResponse.json(
       { error: 'No signature provided' },
       { status: 400 }
@@ -252,14 +262,17 @@ export async function POST(request: NextRequest) {
         })
       } catch (error: any) {
         console.error('[Webhook] Error processing checkout.session.completed:', error)
-        // Don't fail the webhook, return success so Stripe doesn't retry
-        return NextResponse.json({
-          received: true,
-          error: error.message,
-          warning: 'Order processing failed but webhook processed'
-        })
+        // Return success with error details so Stripe doesn't retry infinitely
+        // But log the error for debugging
+        return NextResponse.json(
+          {
+            received: true,
+            error: error.message,
+            warning: 'Order processing failed but webhook processed'
+          },
+          { status: 200 } // Return 200 so Stripe doesn't retry
+        )
       }
-      break
     }
 
     case 'checkout.session.async_payment_succeeded': {
@@ -419,7 +432,11 @@ export async function POST(request: NextRequest) {
       console.log(`Unhandled event type: ${event.type}`)
   }
 
-  return NextResponse.json({ received: true })
+  // Always return 200 OK to Stripe
+  return NextResponse.json(
+    { received: true },
+    { status: 200 }
+  )
 }
 
 // Note: In Next.js App Router, body parsing is handled automatically
