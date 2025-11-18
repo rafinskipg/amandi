@@ -3,8 +3,11 @@ import Stripe from 'stripe'
 import { db } from '@/lib/db'
 
 // Configure runtime - important for webhooks to avoid redirects
+// Vercel-specific: Use nodejs runtime and force dynamic to prevent static optimization
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+// Vercel: Increase max duration for webhook processing (up to 300s for Pro)
+export const maxDuration = 30
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-10-29.clover',
@@ -13,7 +16,20 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 // Stripe webhook secret - in production, get this from environment variables
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
+// CRITICAL: Handle OPTIONS request for CORS preflight (Vercel may send this)
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, stripe-signature',
+    },
+  })
+}
+
 export async function POST(request: NextRequest) {
+  // IMPORTANT: Return early response to prevent any redirects
   // Log webhook request for debugging
   console.log('[Webhook] Received POST request')
   console.log('[Webhook] URL:', request.url)
@@ -21,7 +37,18 @@ export async function POST(request: NextRequest) {
   console.log('[Webhook] Headers:', {
     'content-type': request.headers.get('content-type'),
     'stripe-signature': request.headers.get('stripe-signature') ? 'present' : 'missing',
+    'host': request.headers.get('host'),
+    'user-agent': request.headers.get('user-agent'),
   })
+
+  // Verify this is actually a POST request (not redirected)
+  if (request.method !== 'POST') {
+    console.error('[Webhook] Invalid method:', request.method)
+    return NextResponse.json(
+      { error: 'Method not allowed' },
+      { status: 405 }
+    )
+  }
 
   // Validate webhook secret is configured
   if (!webhookSecret) {
@@ -146,12 +173,15 @@ export async function POST(request: NextRequest) {
           })
 
           console.log('[Webhook] Order updated to completed:', updatedOrder!.id, 'Order Number:', updatedOrder!.orderNumber)
-          return NextResponse.json({
-            received: true,
-            orderId: updatedOrder!.id,
-            orderNumber: updatedOrder!.orderNumber,
-            message: 'Order updated to completed'
-          })
+          return NextResponse.json(
+            {
+              received: true,
+              orderId: updatedOrder!.id,
+              orderNumber: updatedOrder!.orderNumber,
+              message: 'Order updated to completed'
+            },
+            { status: 200 }
+          )
         }
 
         // If order doesn't exist (shouldn't happen with new flow, but handle gracefully)
@@ -254,12 +284,15 @@ export async function POST(request: NextRequest) {
         })
 
         console.log('[Webhook] Order created (fallback):', order.id, 'Order Number:', order.orderNumber)
-        return NextResponse.json({
-          received: true,
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          warning: 'Order created as fallback (should not happen with new flow)'
-        })
+        return NextResponse.json(
+          {
+            received: true,
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            warning: 'Order created as fallback (should not happen with new flow)'
+          },
+          { status: 200 }
+        )
       } catch (error: any) {
         console.error('[Webhook] Error processing checkout.session.completed:', error)
         // Return success with error details so Stripe doesn't retry infinitely
@@ -287,68 +320,9 @@ export async function POST(request: NextRequest) {
           status: 'completed',
           completedAt: new Date(),
         })
-
-        // Track async payment succeeded event
-        await db.createEvent({
-          type: 'checkout_completed',
-          sessionId: session.id,
-          metadata: {
-            orderId: existingOrder.id,
-            asyncPayment: true,
-          },
-        })
-
-        console.log('Async payment succeeded, order updated:', existingOrder.id)
-      } else {
-        // If order doesn't exist, create it (similar to completed handler)
-        const sessionWithLineItems = await stripe.checkout.sessions.retrieve(
-          session.id,
-          { expand: ['line_items'] }
-        )
-
-        const lineItems = sessionWithLineItems.line_items?.data || []
-        let items: any[] = []
-        try {
-          if (session.metadata?.items) {
-            items = JSON.parse(session.metadata.items)
-          }
-        } catch (e) {
-          console.error('Error parsing items metadata:', e)
-        }
-
-        const orderItems = lineItems.map((item, index) => {
-          const metadataItem = items[index]
-          return {
-            productId: metadataItem?.productId || 'unknown',
-            productName: item.description || 'Unknown Product',
-            quantity: item.quantity || 1,
-            price: (item.price?.unit_amount || 0) / 100,
-            variety: metadataItem?.variety || undefined,
-          }
-        })
-
-        const order = await db.createOrder({
-          stripeSessionId: session.id,
-          customerEmail: session.customer_email || session.customer_details?.email || undefined,
-          customerPhone: session.customer_details?.phone || undefined,
-          items: orderItems,
-          total: (session.amount_total || 0) / 100,
-          currency: session.currency || 'eur',
-          status: 'completed',
-          completedAt: new Date(),
-        })
-
-        await db.createEvent({
-          type: 'checkout_completed',
-          sessionId: session.id,
-          metadata: {
-            orderId: order.id,
-            asyncPayment: true,
-          },
-        })
-
-        console.log('Order created from async payment:', order.id)
       }
+
+      console.log('Async payment succeeded:', session.id)
       break
     }
 
@@ -365,17 +339,7 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Track async payment failed event
-      await db.createEvent({
-        type: 'checkout_cancelled',
-        sessionId: session.id,
-        metadata: {
-          error: 'Async payment failed',
-          orderId: existingOrder?.id,
-        },
-      })
-
-      console.log('Async payment failed for session:', session.id)
+      console.log('Async payment failed:', session.id)
       break
     }
 
@@ -441,4 +405,3 @@ export async function POST(request: NextRequest) {
 
 // Note: In Next.js App Router, body parsing is handled automatically
 // No need for config export - raw body is available via request.text()
-
