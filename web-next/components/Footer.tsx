@@ -71,6 +71,9 @@ export default function Footer({ translations, country }: FooterProps) {
             <Link href={`/${currentLang}/track`}>
               {translations.footer.trackOrder}
             </Link>
+            <a href="mailto:info@amandi.bio" className={styles.footerEmail}>
+              {translations.footer.contactEmail || 'info@amandi.bio'}
+            </a>
           </div>
 
           <div className={styles.footerLegal}>

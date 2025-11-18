@@ -87,9 +87,19 @@
 
 .email {
   font-size: 1.1rem;
-  color: var(--amandi-green-deep);
   font-weight: 600;
   margin-top: 0.5rem;
+}
+
+.email a {
+  color: var(--amandi-green-deep);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.email a:hover {
+  color: var(--amandi-green);
+  text-decoration: underline;
 }
 
 @media (max-width: 768px) {

@@ -126,7 +126,9 @@ export default async function PrivacyPage({
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>{t.privacy.contact.title}</h2>
             <p className={styles.description}>{t.privacy.contact.description}</p>
-            <p className={styles.email}>{t.privacy.contact.email}</p>
+            <p className={styles.email}>
+              <a href="mailto:info@amandi.bio">info@amandi.bio</a>
+            </p>
           </section>
         </div>
       </div>

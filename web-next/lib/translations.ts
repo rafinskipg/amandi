@@ -273,7 +273,8 @@ export const es = {
             shipping: "Envíos a Europa"
         },
         information: "Información",
-        trackOrder: "Rastrear mi pedido"
+        trackOrder: "Rastrear mi pedido",
+        contactEmail: "Contacto: info@amandi.bio"
     },
     trackOrder: {
         title: "Rastrear mi pedido",
@@ -694,7 +695,8 @@ export const en = {
             shipping: "Shipping to Europe"
         },
         information: "Information",
-        trackOrder: "Track my order"
+        trackOrder: "Track my order",
+        contactEmail: "Contact: info@amandi.bio"
     },
     trackOrder: {
         title: "Track my order",

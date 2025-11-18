@@ -367,11 +367,45 @@ export default function Dashboard({ onLogout }: DashboardProps) {
 
       // Refresh orders, order details, and metrics
       await fetchOrders()
-      await fetchOrderDetails(orderId)
-      await fetchData() // Refresh metrics
+      if (expandedOrderId === orderId) {
+        await fetchOrderDetails(orderId)
+      }
+      await fetchData()
     } catch (error) {
       console.error('Error updating order status:', error)
       alert('Failed to update order status')
+    } finally {
+      setUpdatingOrderId(null)
+    }
+  }
+
+  const handleDeleteOrder = async (orderId: string) => {
+    const order = ordersResponse.orders.find(o => o.id === orderId)
+    if (!order) return
+
+    // Confirm deletion
+    const confirmed = window.confirm(
+      `Are you sure you want to delete order ${order.orderNumber}? This action cannot be undone.`
+    )
+    if (!confirmed) return
+
+    setUpdatingOrderId(orderId)
+    try {
+      const response = await adminFetch(`/api/orders/${orderId}`, {
+        method: 'DELETE',
+      }, handleUnauthorized)
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to delete order')
+      }
+
+      // Refresh orders and metrics
+      await fetchOrders()
+      await fetchData()
+    } catch (error: any) {
+      console.error('Error deleting order:', error)
+      alert(error.message || 'Failed to delete order')
     } finally {
       setUpdatingOrderId(null)
     }
@@ -754,13 +788,23 @@ export default function Dashboard({ onLogout }: DashboardProps) {
                               {isExpanded ? '▼' : '▶'} Details
                             </button>
                             {order.status === 'pending' && (
-                              <button
-                                onClick={() => handleStatusChange(order.id, 'payment_received')}
-                                disabled={updatingOrderId === order.id}
-                                className={styles.statusButton}
-                              >
-                                {updatingOrderId === order.id ? '...' : 'Mark as Payment Received'}
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => handleStatusChange(order.id, 'payment_received')}
+                                  disabled={updatingOrderId === order.id}
+                                  className={styles.statusButton}
+                                >
+                                  {updatingOrderId === order.id ? '...' : 'Mark as Payment Received'}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteOrder(order.id)}
+                                  disabled={updatingOrderId === order.id}
+                                  className={`${styles.statusButton} ${styles.deleteButton}`}
+                                  style={{ backgroundColor: '#dc2626', color: 'white' }}
+                                >
+                                  {updatingOrderId === order.id ? '...' : '🗑️ Delete'}
+                                </button>
+                              </>
                             )}
                             {(order.status === 'payment_received' || order.status === 'completed') && (
                               <button

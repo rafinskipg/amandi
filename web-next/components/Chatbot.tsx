@@ -24,6 +24,7 @@ export default function Chatbot({ orderNumber, variant = 'bubble' }: ChatbotProp
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   // Detect language
   const langMatch = pathname.match(/^\/([a-z]{2})/)
@@ -39,7 +40,65 @@ export default function Chatbot({ orderNumber, variant = 'bubble' }: ChatbotProp
   // Focus input when chat opens
   useEffect(() => {
     if (isOpen && inputRef.current) {
-      inputRef.current.focus()
+      // Small delay to ensure container is rendered
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 100)
+    }
+  }, [isOpen])
+
+  // Handle keyboard opening on mobile - adjust scroll when input is focused
+  useEffect(() => {
+    const handleInputFocus = () => {
+      // Wait for keyboard to open, then scroll to bottom
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+        // Also scroll the messages container to ensure visibility
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+        }
+      }, 300) // Delay to allow keyboard animation
+    }
+
+    const handleInputBlur = () => {
+      // Optional: scroll back when keyboard closes
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      }, 100)
+    }
+
+    const input = inputRef.current
+    if (input) {
+      input.addEventListener('focus', handleInputFocus)
+      input.addEventListener('blur', handleInputBlur)
+      
+      return () => {
+        input.removeEventListener('focus', handleInputFocus)
+        input.removeEventListener('blur', handleInputBlur)
+      }
+    }
+  }, [isOpen])
+
+  // Handle visual viewport changes (keyboard opening/closing on mobile)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return
+
+    const handleViewportChange = () => {
+      // When viewport changes (keyboard opens/closes), adjust scroll
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+        }
+      }, 100)
+    }
+
+    window.visualViewport.addEventListener('resize', handleViewportChange)
+    window.visualViewport.addEventListener('scroll', handleViewportChange)
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleViewportChange)
+      window.visualViewport?.removeEventListener('scroll', handleViewportChange)
     }
   }, [isOpen])
 
@@ -152,7 +211,7 @@ export default function Chatbot({ orderNumber, variant = 'bubble' }: ChatbotProp
                 ✕
               </button>
             </div>
-            <div className={styles.chatbotMessages}>
+            <div ref={messagesContainerRef} className={styles.chatbotMessages}>
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -207,7 +266,7 @@ export default function Chatbot({ orderNumber, variant = 'bubble' }: ChatbotProp
           </span>
         </div>
       </div>
-      <div className={styles.chatbotMessages}>
+      <div ref={messagesContainerRef} className={styles.chatbotMessages}>
         {messages.map((message, index) => (
           <div
             key={index}

@@ -17,8 +17,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Avocados Amandi - Desde la tierra buena, para la vida buena",
-  description: "Aguacates ecológicos cultivados en Asturias, sin cámaras, sin prisas. Cosechamos solo cuando el árbol decide.",
+  title: "Buy Organic Avocados Online | Direct Shipping from Spain | Avocados Amandi",
+  description: "Buy premium organic avocados grown in Asturias, Spain. Direct shipping across Europe. No cold storage, tree-ripened Hass and Lamb Hass avocados. Certified organic. From €18.",
+  keywords: "buy organic avocados online, organic avocados Spain, premium avocados, tree-ripened avocados, Hass avocados online, certified organic avocados, buy avocados Europe",
   icons: {
     icon: '/favicon.png',
     apple: '/favicon.png',

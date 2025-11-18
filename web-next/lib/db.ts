@@ -719,4 +719,33 @@ export const db = {
       createdAt: log.createdAt,
     }))
   },
+
+  // Delete order (only allowed for pending orders)
+  deleteOrder: async (id: string): Promise<boolean> => {
+    try {
+      // First check if order exists and is pending
+      const order = await prisma.order.findUnique({
+        where: { id },
+        select: { status: true },
+      })
+
+      if (!order) {
+        return false
+      }
+
+      if (order.status !== 'pending') {
+        throw new Error('Only pending orders can be deleted')
+      }
+
+      // Delete order (cascade will delete related items, shipments, messages, and status logs)
+      await prisma.order.delete({
+        where: { id },
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error deleting order:', error)
+      throw error
+    }
+  },
 }

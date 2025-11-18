@@ -83,3 +83,53 @@ export async function PATCH(
   }
 }
 
+// Delete order (only pending orders)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  // Require admin authentication
+  const authError = await requireAdminAuth(request)
+  if (authError) {
+    return authError
+  }
+
+  try {
+    const { id } = await params
+
+    // Verify order exists and is pending
+    const order = await db.getOrder(id)
+
+    if (!order) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      )
+    }
+
+    if (order.status !== 'pending') {
+      return NextResponse.json(
+        { error: 'Only pending orders can be deleted' },
+        { status: 400 }
+      )
+    }
+
+    const deleted = await db.deleteOrder(id)
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: 'Failed to delete order' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ success: true, message: 'Order deleted successfully' })
+  } catch (error: any) {
+    console.error('Error deleting order:', error)
+    return NextResponse.json(
+      { error: error.message || 'Failed to delete order' },
+      { status: 500 }
+    )
+  }
+}
+

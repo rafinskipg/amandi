@@ -45,6 +45,18 @@
   opacity: 0.8;
 }
 
+.footerEmail {
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: opacity 0.2s ease;
+}
+
+.footerEmail:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
 .footerLegal {
   display: flex;
   flex-direction: column;
