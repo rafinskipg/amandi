@@ -298,6 +298,124 @@ export const es = {
             delivered: "Entregado",
             failed: "Fallido"
         }
+    },
+    privacy: {
+        title: "Política de Privacidad",
+        lastUpdated: "Última actualización",
+        introduction: "En Avocados Amandi, nos comprometemos a proteger tu privacidad. Esta política explica cómo recopilamos, usamos y protegemos tu información personal.",
+        dataCollection: {
+            title: "Información que Recopilamos",
+            description: "Recopilamos información que nos proporcionas directamente cuando:",
+            points: [
+                "Realizas una compra en nuestro sitio web",
+                "Te registras para recibir actualizaciones",
+                "Te pones en contacto con nosotros",
+                "Utilizas nuestro chatbot"
+            ],
+            dataTypes: {
+                title: "Los tipos de información que recopilamos incluyen:",
+                personal: "Información personal: nombre, dirección de correo electrónico, número de teléfono, dirección de envío",
+                payment: "Información de pago: procesada de forma segura a través de Stripe (no almacenamos datos de tarjetas de crédito)",
+                order: "Información de pedidos: historial de compras, preferencias de productos",
+                technical: "Información técnica: dirección IP, tipo de navegador, páginas visitadas (a través de cookies)"
+            }
+        },
+        dataUse: {
+            title: "Cómo Usamos tu Información",
+            points: [
+                "Procesar y cumplir tus pedidos",
+                "Enviarte confirmaciones de pedido y actualizaciones de envío",
+                "Responder a tus consultas y proporcionar soporte al cliente",
+                "Mejorar nuestros productos y servicios",
+                "Enviarte comunicaciones de marketing (solo si has dado tu consentimiento)",
+                "Cumplir con obligaciones legales"
+            ]
+        },
+        dataSharing: {
+            title: "Compartir Información",
+            description: "No vendemos tu información personal. Podemos compartir tu información con:",
+            points: [
+                "Proveedores de servicios: Stripe (procesamiento de pagos), servicios de envío (GLS)",
+                "Cuando sea requerido por ley o para proteger nuestros derechos legales"
+            ]
+        },
+        dataSecurity: {
+            title: "Seguridad de los Datos",
+            description: "Implementamos medidas de seguridad técnicas y organizativas para proteger tu información personal contra acceso no autorizado, alteración, divulgación o destrucción."
+        },
+        cookies: {
+            title: "Cookies",
+            description: "Utilizamos cookies para mejorar tu experiencia en nuestro sitio web. Puedes controlar las cookies a través de la configuración de tu navegador."
+        },
+        yourRights: {
+            title: "Tus Derechos",
+            description: "Tienes derecho a:",
+            points: [
+                "Acceder a tu información personal",
+                "Rectificar información incorrecta",
+                "Solicitar la eliminación de tu información",
+                "Oponerte al procesamiento de tu información",
+                "Solicitar la portabilidad de tus datos",
+                "Retirar tu consentimiento en cualquier momento"
+            ]
+        },
+        contact: {
+            title: "Contacto",
+            description: "Si tienes preguntas sobre esta política de privacidad, puedes contactarnos en:",
+            email: "Email: info@amandi.bio"
+        }
+    },
+    shipping: {
+        title: "Envíos a Europa",
+        subtitle: "Aguacates ecológicos frescos directamente desde Asturias",
+        description: "Enviamos nuestros aguacates ecológicos certificados a toda Europa. Cosechados a mano en nuestra finca de Asturias y entregados en tu puerta en 2-7 días.",
+        benefits: {
+            title: "Beneficios de Pedir Nuestros Aguacates Ecológicos",
+            items: [
+                {
+                    icon: "🌱",
+                    title: "Certificación Ecológica",
+                    description: "Aguacates certificados ecológicos, cultivados sin pesticidas ni químicos"
+                },
+                {
+                    icon: "🤲",
+                    title: "Cosecha Manual",
+                    description: "Cada aguacate se recolecta a mano cuando está perfectamente maduro"
+                },
+                {
+                    icon: "🚚",
+                    title: "Envío Rápido",
+                    description: "Entrega en 2-7 días laborables directamente desde nuestra finca"
+                },
+                {
+                    icon: "🌿",
+                    title: "Sin Cámaras Frigoríficas",
+                    description: "Fruta tree-ripened, sin procesos artificiales de maduración"
+                },
+                {
+                    icon: "📍",
+                    title: "Origen Local Europeo",
+                    description: "Cultivados en Asturias, España - sin importaciones de ultramar"
+                },
+                {
+                    icon: "💚",
+                    title: "Agricultura Regenerativa",
+                    description: "Prácticas sostenibles que cuidan el suelo y el medio ambiente"
+                }
+            ]
+        },
+        countries: {
+            title: "Países de Entrega",
+            description: "Enviamos a los siguientes países europeos:"
+        },
+        shippingInfo: {
+            title: "Información de Envío",
+            cost: "Coste de envío",
+            deliveryTime: "Tiempo de entrega estimado",
+            freeShipping: "Envío gratis para pedidos superiores a 30€ (España)",
+            tracking: "Recibirás un número de seguimiento por email cuando tu pedido sea enviado"
+        },
+        cta: "Ver Productos"
     }
 }
 
@@ -601,6 +719,124 @@ export const en = {
             delivered: "Delivered",
             failed: "Failed"
         }
+    },
+    privacy: {
+        title: "Privacy Policy",
+        lastUpdated: "Last updated",
+        introduction: "At Avocados Amandi, we are committed to protecting your privacy. This policy explains how we collect, use, and protect your personal information.",
+        dataCollection: {
+            title: "Information We Collect",
+            description: "We collect information you provide directly when:",
+            points: [
+                "You make a purchase on our website",
+                "You register to receive updates",
+                "You contact us",
+                "You use our chatbot"
+            ],
+            dataTypes: {
+                title: "The types of information we collect include:",
+                personal: "Personal information: name, email address, phone number, shipping address",
+                payment: "Payment information: processed securely through Stripe (we do not store credit card data)",
+                order: "Order information: purchase history, product preferences",
+                technical: "Technical information: IP address, browser type, pages visited (through cookies)"
+            }
+        },
+        dataUse: {
+            title: "How We Use Your Information",
+            points: [
+                "Process and fulfill your orders",
+                "Send you order confirmations and shipping updates",
+                "Respond to your inquiries and provide customer support",
+                "Improve our products and services",
+                "Send you marketing communications (only if you have given consent)",
+                "Comply with legal obligations"
+            ]
+        },
+        dataSharing: {
+            title: "Sharing Information",
+            description: "We do not sell your personal information. We may share your information with:",
+            points: [
+                "Service providers: Stripe (payment processing), shipping services (GLS)",
+                "When required by law or to protect our legal rights"
+            ]
+        },
+        dataSecurity: {
+            title: "Data Security",
+            description: "We implement technical and organizational security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction."
+        },
+        cookies: {
+            title: "Cookies",
+            description: "We use cookies to improve your experience on our website. You can control cookies through your browser settings."
+        },
+        yourRights: {
+            title: "Your Rights",
+            description: "You have the right to:",
+            points: [
+                "Access your personal information",
+                "Rectify incorrect information",
+                "Request deletion of your information",
+                "Object to processing of your information",
+                "Request portability of your data",
+                "Withdraw your consent at any time"
+            ]
+        },
+        contact: {
+            title: "Contact",
+            description: "If you have questions about this privacy policy, you can contact us at:",
+            email: "Email: info@amandi.bio"
+        }
+    },
+    shipping: {
+        title: "Shipping to Europe",
+        subtitle: "Fresh organic avocados directly from Asturias",
+        description: "We ship our certified organic avocados throughout Europe. Hand-harvested at our farm in Asturias and delivered to your door in 2-7 days.",
+        benefits: {
+            title: "Benefits of Ordering Our Organic Avocados",
+            items: [
+                {
+                    icon: "🌱",
+                    title: "Organic Certification",
+                    description: "Certified organic avocados, grown without pesticides or chemicals"
+                },
+                {
+                    icon: "🤲",
+                    title: "Hand Harvested",
+                    description: "Each avocado is hand-picked when perfectly ripe"
+                },
+                {
+                    icon: "🚚",
+                    title: "Fast Shipping",
+                    description: "Delivery in 2-7 business days directly from our farm"
+                },
+                {
+                    icon: "🌿",
+                    title: "No Cold Storage",
+                    description: "Tree-ripened fruit, without artificial ripening processes"
+                },
+                {
+                    icon: "📍",
+                    title: "European Origin",
+                    description: "Grown in Asturias, Spain - no overseas imports"
+                },
+                {
+                    icon: "💚",
+                    title: "Regenerative Agriculture",
+                    description: "Sustainable practices that care for soil and environment"
+                }
+            ]
+        },
+        countries: {
+            title: "Delivery Countries",
+            description: "We ship to the following European countries:"
+        },
+        shippingInfo: {
+            title: "Shipping Information",
+            cost: "Shipping cost",
+            deliveryTime: "Estimated delivery time",
+            freeShipping: "Free shipping for orders over €30 (Spain)",
+            tracking: "You will receive a tracking number by email when your order is shipped"
+        },
+        cta: "View Products"
     }
 }
 

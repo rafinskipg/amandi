@@ -5,7 +5,8 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #fce8af;
+  background: #ebc985;
+  max-height: 50vh;
 }
 
 .heroInner {

@@ -1,0 +1,279 @@
+.container {
+  min-height: 100vh;
+  background: var(--amandi-cream-soft);
+}
+
+/* Hero Section */
+.hero {
+  background: var(--amandi-green-deep);
+  color: var(--amandi-cream);
+  padding: var(--amandi-section-padding) 2rem;
+  text-align: center;
+}
+
+.heroContent {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.heroTitle {
+  font-family: var(--amandi-font-display);
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  font-weight: 900;
+}
+
+.heroSubtitle {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  opacity: 0.95;
+}
+
+.heroDescription {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  opacity: 0.9;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Benefits Section */
+.benefitsSection {
+  padding: var(--amandi-section-padding) 2rem;
+  background: var(--amandi-cream);
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.sectionTitle {
+  font-family: var(--amandi-font-display);
+  font-size: 3rem;
+  color: var(--amandi-green-deep);
+  text-align: center;
+  margin-bottom: 1rem;
+  font-weight: 900;
+}
+
+.sectionDescription {
+  text-align: center;
+  color: var(--amandi-text-muted);
+  font-size: 1.1rem;
+  margin-bottom: 3rem;
+}
+
+.benefitsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.benefitCard {
+  background: var(--amandi-cream-soft);
+  border-radius: var(--amandi-radius-md);
+  padding: 2rem;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 2px solid var(--amandi-border-soft);
+}
+
+.benefitCard:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--amandi-shadow-soft);
+  border-color: var(--amandi-green);
+}
+
+.benefitIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.benefitTitle {
+  font-size: 1.3rem;
+  color: var(--amandi-green-deep);
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.benefitDescription {
+  color: var(--amandi-text-main);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+/* Countries Section */
+.countriesSection {
+  padding: var(--amandi-section-padding) 2rem;
+  background: var(--amandi-cream-soft);
+}
+
+.countriesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.countryCard {
+  background: var(--amandi-cream);
+  border-radius: var(--amandi-radius-md);
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: var(--amandi-shadow-soft);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid var(--amandi-border-soft);
+}
+
+.countryCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(9, 55, 33, 0.2);
+  border-color: var(--amandi-green);
+}
+
+.countryFlag {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.countryName {
+  font-size: 1.2rem;
+  color: var(--amandi-green-deep);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.countryInfo {
+  text-align: left;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.infoLabel {
+  color: var(--amandi-text-muted);
+  font-weight: 500;
+}
+
+.infoValue {
+  color: var(--amandi-green-deep);
+  font-weight: 600;
+}
+
+.freeShipping {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: var(--amandi-green-soft);
+  border-radius: 6px;
+  color: var(--amandi-green-deep);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Info Section */
+.infoSection {
+  padding: var(--amandi-section-padding) 2rem;
+  background: var(--amandi-cream);
+}
+
+.infoCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.infoCard {
+  background: var(--amandi-green-deep);
+  color: var(--amandi-cream);
+  border-radius: var(--amandi-radius-md);
+  padding: 2rem;
+  text-align: center;
+}
+
+.infoCardIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.infoCardTitle {
+  font-size: 1.3rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.infoCardText {
+  line-height: 1.6;
+  opacity: 0.95;
+  font-size: 0.95rem;
+}
+
+/* CTA Section */
+.ctaSection {
+  padding: var(--amandi-section-padding) 2rem;
+  background: var(--amandi-green-deep);
+  text-align: center;
+}
+
+.ctaButton {
+  display: inline-block;
+  background: var(--amandi-cream);
+  color: var(--amandi-green-deep);
+  padding: 1rem 3rem;
+  border-radius: var(--amandi-radius-pill);
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: var(--amandi-shadow-soft);
+}
+
+.ctaButton:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(9, 55, 33, 0.3);
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 2rem;
+  }
+
+  .heroSubtitle {
+    font-size: 1.2rem;
+  }
+
+  .sectionTitle {
+    font-size: 2rem;
+  }
+
+  .benefitsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .countriesGrid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .infoCards {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    padding: 3rem 1.5rem;
+  }
+
+  .benefitsSection,
+  .countriesSection,
+  .infoSection,
+  .ctaSection {
+    padding: 2rem 1.5rem;
+  }
+}
+

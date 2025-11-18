@@ -32,7 +32,7 @@ interface Order {
   }>
   total: number
   currency: string
-  status: 'pending' | 'completed' | 'failed' | 'delivered'
+  status: 'pending' | 'payment_received' | 'completed' | 'failed' | 'delivered'
   createdAt: string
   completedAt?: string
 }

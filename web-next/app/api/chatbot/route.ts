@@ -8,26 +8,124 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
+// Helper function to generate user-friendly status message
+function getStatusMessage(order: any, lang: 'es' | 'en'): string {
+  const isSpanish = lang === 'es'
+  const status = order.status
+  const hasShipments = order.shipments && order.shipments.length > 0
+  const latestShipment = hasShipments ? order.shipments[0] : null
+  const hasTracking = latestShipment?.trackingNumber
+  const latestStatusLog = order.statusLogs && order.statusLogs.length > 0 
+    ? order.statusLogs[order.statusLogs.length - 1] 
+    : null
+
+  // Check if items are shipped
+  const allItemsShipped = order.items.every((item: any) => item.shipped)
+  const someItemsShipped = order.items.some((item: any) => item.shipped)
+
+  if (status === 'delivered') {
+    return isSpanish
+      ? 'Tu pedido ha sido entregado. ¡Esperamos que disfrutes de tus aguacates ecológicos!'
+      : 'Your order has been delivered. We hope you enjoy your organic avocados!'
+  }
+
+  if (hasShipments && latestShipment?.shippedAt) {
+    const shippedDate = new Date(latestShipment.shippedAt)
+    const daysSinceShipped = Math.floor((Date.now() - shippedDate.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (hasTracking) {
+      return isSpanish
+        ? `Tu pedido fue enviado el ${shippedDate.toLocaleDateString('es-ES')}. Número de seguimiento: ${latestShipment.trackingNumber}${latestShipment.carrier ? ` (${latestShipment.carrier})` : ''}. Deberías recibirlo pronto.`
+        : `Your order was shipped on ${shippedDate.toLocaleDateString('en-GB')}. Tracking number: ${latestShipment.trackingNumber}${latestShipment.carrier ? ` (${latestShipment.carrier})` : ''}. You should receive it soon.`
+    } else {
+      return isSpanish
+        ? `Tu pedido fue enviado el ${shippedDate.toLocaleDateString('es-ES')}. Deberías recibirlo pronto.`
+        : `Your order was shipped on ${shippedDate.toLocaleDateString('en-GB')}. You should receive it soon.`
+    }
+  }
+
+  if (someItemsShipped || allItemsShipped) {
+    return isSpanish
+      ? 'Tu pedido está siendo preparado para el envío. Te notificaremos cuando sea enviado.'
+      : 'Your order is being prepared for shipment. We will notify you when it is shipped.'
+  }
+
+  if (status === 'payment_received' || status === 'completed') {
+    return isSpanish
+      ? 'Hemos recibido tu pago correctamente. Tu pedido está siendo procesado y preparado para el envío. Te notificaremos cuando sea enviado.'
+      : 'We have successfully received your payment. Your order is being processed and prepared for shipment. We will notify you when it is shipped.'
+  }
+
+  if (status === 'pending') {
+    return isSpanish
+      ? 'Tu pedido está pendiente de confirmación de pago. Una vez confirmado el pago, comenzaremos a prepararlo para el envío.'
+      : 'Your order is pending payment confirmation. Once payment is confirmed, we will start preparing it for shipment.'
+  }
+
+  if (status === 'failed') {
+    return isSpanish
+      ? 'Hubo un problema con el pago de tu pedido. Por favor, contacta con nosotros para resolverlo.'
+      : 'There was a problem with your order payment. Please contact us to resolve it.'
+  }
+
+  // Default fallback
+  return isSpanish
+    ? 'Tu pedido está siendo procesado. Te mantendremos informado sobre su estado.'
+    : 'Your order is being processed. We will keep you informed about its status.'
+}
+
 // Helper function to extract order information
-async function getOrderContext(orderNumber?: string) {
+async function getOrderContext(orderNumber?: string, lang: 'es' | 'en' = 'en') {
   if (!orderNumber) return null
 
   try {
     const order = await db.getOrderByOrderNumber(orderNumber.toUpperCase())
     if (!order) return null
 
+    // Get shipments and status logs for better context
+    const shipments = await db.getShipmentsByOrderId(order.id)
+    const statusLogs = await db.getStatusLogsByOrderId(order.id)
+
+    // Sort shipments by shippedAt date (newest first), then by createdAt
+    const sortedShipments = shipments.sort((a, b) => {
+      const aDate = a.shippedAt ? new Date(a.shippedAt).getTime() : new Date(a.createdAt).getTime()
+      const bDate = b.shippedAt ? new Date(b.shippedAt).getTime() : new Date(b.createdAt).getTime()
+      return bDate - aDate
+    })
+
+    // Sort status logs by date (newest first)
+    const sortedStatusLogs = statusLogs.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+
+    // Generate user-friendly status message
+    const statusMessage = getStatusMessage({
+      ...order,
+      shipments: sortedShipments,
+      statusLogs: sortedStatusLogs,
+    }, lang)
+
     return {
       orderNumber: order.orderNumber,
       status: order.status,
+      statusMessage, // User-friendly status explanation
       total: order.total,
       currency: order.currency,
       createdAt: order.createdAt.toISOString(),
+      completedAt: order.completedAt?.toISOString(),
       items: order.items.map(item => ({
         productName: item.productName,
         quantity: item.quantity,
         price: item.price,
         variety: item.variety,
+        shipped: item.shipped,
       })),
+      shipments: sortedShipments.map(shipment => ({
+        trackingNumber: shipment.trackingNumber,
+        carrier: shipment.carrier,
+        shippedAt: shipment.shippedAt,
+      })),
+      hasTracking: sortedShipments.some(s => s.trackingNumber),
     }
   } catch (error) {
     console.error('Error fetching order:', error)
@@ -91,7 +189,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get order context if order number is provided
-    const orderContext = await getOrderContext(extractedOrderNumber)
+    const orderContext = await getOrderContext(extractedOrderNumber, lang as 'es' | 'en')
     
     // Validate format after lookup attempt
     if (extractedOrderNumber && !orderContext) {
@@ -106,14 +204,26 @@ export async function POST(request: NextRequest) {
     const isSpanish = lang === 'es'
     
     if (orderContext) {
+      const trackingInfo = orderContext.hasTracking && orderContext.shipments.length > 0
+        ? orderContext.shipments
+            .filter(s => s.trackingNumber)
+            .map(s => `${s.trackingNumber}${s.carrier ? ` (${s.carrier})` : ''}`)
+            .join(', ')
+        : null
+
       orderInfo = `\n\nCurrent Order Information (Order ${orderContext.orderNumber}):
-- Status: ${orderContext.status}
+- Order Status Explanation: ${orderContext.statusMessage}
 - Total: ${orderContext.total}${orderContext.currency}
 - Created: ${new Date(orderContext.createdAt).toLocaleDateString()}
-- Items:
-${orderContext.items.map(item => `  - ${item.productName} (${item.quantity}x) - ${item.price}${orderContext.currency}${item.variety ? ` (${item.variety})` : ''}`).join('\n')}
+${orderContext.completedAt ? `- Payment Received: ${new Date(orderContext.completedAt).toLocaleDateString()}\n` : ''}${trackingInfo ? `- Tracking Number(s): ${trackingInfo}\n` : ''}- Items:
+${orderContext.items.map(item => `  - ${item.productName} (${item.quantity}x) - ${item.price}${orderContext.currency}${item.variety ? ` (${item.variety})` : ''}${item.shipped ? ' [Shipped]' : ''}`).join('\n')}
 
-You can provide this order information to the customer.`
+IMPORTANT: When sharing order information with the customer:
+- Use the "Order Status Explanation" above to explain the current status in a friendly, conversational way
+- Do NOT just repeat the raw status like "Status: Completed" or "Status: payment_received"
+- Explain what the status means for the customer (e.g., "We have received your payment and are preparing your order for shipment")
+- If there's a tracking number, mention it naturally in your explanation
+- Be helpful and reassuring about next steps`
     } else if (extractedOrderNumber) {
       // Order number was provided but not found or invalid format
       const formatExample = isSpanish 

@@ -9,6 +9,7 @@ import { es } from '@/lib/translations'
 import { buildProductRoute } from '@/lib/routes'
 import LanguageSelector from './LanguageSelector'
 import ProductImage from './ProductImage'
+import Footer from './Footer'
 import styles from './ShopPage.module.css'
 
 interface Props {
@@ -136,6 +137,7 @@ export default function ShopPage({ translations }: Props) {
           </motion.div>
         </div>
       </section>
+      <Footer translations={translations} />
     </>
   )
 }

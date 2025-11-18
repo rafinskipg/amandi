@@ -144,13 +144,6 @@ function LoginForm({ onLogin }: { onLogin: (password: string) => void }) {
               placeholder="Enter password"
               autoFocus
             />
-            <p style={{
-              fontSize: '0.85rem',
-              color: '#999',
-              marginTop: '0.5rem'
-            }}>
-              Hint: Try "admin" or "amandi2024"
-            </p>
           </div>
           <button
             type="submit"

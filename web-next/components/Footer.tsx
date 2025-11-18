@@ -74,8 +74,8 @@ export default function Footer({ translations, country }: FooterProps) {
           </div>
 
           <div className={styles.footerLegal}>
-            <Link href="#">{t.links.privacy}</Link>
-            <Link href="#">{t.links.shipping}</Link>
+            <Link href={`/${currentLang}/privacy`}>{t.links.privacy}</Link>
+            <Link href={`/${currentLang}/shipping`}>{t.links.shipping}</Link>
           </div>
         </div>
         <div className={styles.footerBottom}>

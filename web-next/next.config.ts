@@ -16,6 +16,35 @@ const nextConfig: NextConfig = {
       // This ensures /api/webhooks/stripe doesn't get redirected
     ]
   },
+  
+  // Security headers (additional to middleware)
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload'
+          },
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
+          },
+        ],
+      },
+      {
+        // Block access to sensitive files
+        source: '/:path*\\.(env|git|log|sql|bak|backup|old|save|php)$',
+        headers: [
+          {
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow, noarchive, nosnippet'
+          },
+        ],
+      },
+    ]
+  },
 };
 
 export default nextConfig;

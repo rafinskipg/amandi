@@ -134,8 +134,8 @@ export const products: Product[] = [
       en: 'Our olive oil',
     },
     description: {
-      es: 'Aceite de oliva virgen extra de Asturias, prensado en frío. Ideal para acompañar tus aguacates. Obtenido de olivos locales, este aceite conserva todo su sabor y propiedades naturales. Envase de vidrio oscuro para protegerlo de la luz.',
-      en: 'Extra virgin olive oil from Asturias, cold-pressed. Ideal to accompany your avocados. Obtained from local olive trees, this oil retains all its flavor and natural properties. Dark glass container to protect it from light.',
+      es: 'Aceite de oliva virgen extra de España, prensado en frío. Ideal para acompañar tus aguacates. Este aceite conserva todo su sabor y propiedades naturales. Envase de vidrio oscuro para protegerlo de la luz.',
+      en: 'Extra virgin olive oil from Spain, cold-pressed. Ideal to accompany your avocados. This oil retains all its flavor and natural properties. Dark glass container to protect it from light.',
     },
     price: 10,
     currency: 'EUR',
@@ -144,8 +144,8 @@ export const products: Product[] = [
     icon: '🫒',
     unit: '500ml',
     features: {
-      es: ['Virgen extra', 'Prensado en frío', 'Origen Asturias'],
-      en: ['Extra virgin', 'Cold-pressed', 'From Asturias']
+      es: ['Virgen extra', 'Prensado en frío', 'Origen España'],
+      en: ['Extra virgin', 'Cold-pressed', 'From Spain']
     },
     inStock: true,
   },
