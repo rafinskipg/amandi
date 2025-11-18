@@ -14,7 +14,8 @@
   position: relative;
 }
 
-.videoContainer {
+.videoContainer,
+.imageContainer {
   width: 100%;
   aspect-ratio: 16 / 9;
   border-radius: var(--amandi-radius-lg);
@@ -27,6 +28,13 @@
   width: 100%;
   height: 100%;
   border: none;
+  display: block;
+}
+
+.fincaImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
 }
 

@@ -41,10 +41,45 @@ export async function generateMetadata({
   const lang = translations === es ? 'es' : 'en'
   const title = product.title[lang] || product.title.en
   const description = product.description[lang] || product.description.en
+  
+  // Get product image URL
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.amandi.bio'
+  const productImage = product.images && product.images.length > 0
+    ? `${baseUrl}${product.images[0]}`
+    : `${baseUrl}/brand.png` // Fallback to brand logo
+  
+  const productUrl = `${baseUrl}/${resolvedParams.lang}/shop/${resolvedParams.productId}`
+  
+  // Format price for display
+  const priceText = lang === 'es'
+    ? `${product.price}€`
+    : `€${product.price}`
 
   return {
     title: `${title} | Avocados Amandi`,
     description,
+    openGraph: {
+      title: `${title} | Avocados Amandi`,
+      description: `${description} ${lang === 'es' ? 'Precio:' : 'Price:'} ${priceText}`,
+      url: productUrl,
+      siteName: 'Avocados Amandi',
+      images: [
+        {
+          url: productImage,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+      locale: lang === 'es' ? 'es_ES' : 'en_GB',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} | Avocados Amandi`,
+      description: `${description} ${lang === 'es' ? 'Precio:' : 'Price:'} ${priceText}`,
+      images: [productImage],
+    },
   }
 }
 

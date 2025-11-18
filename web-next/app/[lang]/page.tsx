@@ -33,9 +33,40 @@ export async function generateMetadata({
     }
   }
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.amandi.bio'
+  const isSpanish = resolvedParams.lang === 'es'
+  const pageUrl = `${baseUrl}/${resolvedParams.lang}`
+  const ogImage = `${baseUrl}/brand.png`
+
   return {
     title: 'Avocados Amandi - Desde la tierra buena, para la vida buena',
     description: 'Aguacates ecológicos cultivados en Asturias, sin cámaras, sin prisas. Cosechamos solo cuando el árbol decide.',
+    openGraph: {
+      title: 'Avocados Amandi - Desde la tierra buena, para la vida buena',
+      description: isSpanish
+        ? 'Aguacates ecológicos cultivados en Asturias, sin cámaras, sin prisas. Cosechamos solo cuando el árbol decide.'
+        : 'Organic avocados grown in Asturias, no cold storage, no rush. We harvest only when the tree decides.',
+      url: pageUrl,
+      siteName: 'Avocados Amandi',
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: 'Avocados Amandi',
+        },
+      ],
+      locale: isSpanish ? 'es_ES' : 'en_GB',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Avocados Amandi - Desde la tierra buena, para la vida buena',
+      description: isSpanish
+        ? 'Aguacates ecológicos cultivados en Asturias, sin cámaras, sin prisas.'
+        : 'Organic avocados grown in Asturias, no cold storage, no rush.',
+      images: [ogImage],
+    },
   }
 }
 

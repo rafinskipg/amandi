@@ -24,9 +24,40 @@ export async function generateMetadata({
     }
   }
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.amandi.bio'
+  const isSpanish = resolvedParams.lang === 'es'
+  const pageUrl = `${baseUrl}/${resolvedParams.lang}/shop`
+  const ogImage = `${baseUrl}/brand.png`
+  const title = isSpanish ? 'Tienda | Avocados Amandi' : 'Shop | Avocados Amandi'
+  const description = isSpanish
+    ? 'Descubre todos nuestros productos: aguacates ecológicos, productos artesanales y productos locales de Asturias.'
+    : 'Discover all our products: organic avocados, artisan goods, and local produce from Asturias.'
+
   return {
-    title: resolvedParams.lang === 'es' ? 'Tienda | Avocados Amandi' : 'Shop | Avocados Amandi',
-    description: 'Discover all our products: organic avocados, artisan goods, and local produce from Asturias.',
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: 'Avocados Amandi',
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: 'Avocados Amandi Shop',
+        },
+      ],
+      locale: isSpanish ? 'es_ES' : 'en_GB',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImage],
+    },
   }
 }
 

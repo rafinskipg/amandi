@@ -52,13 +52,41 @@ export async function generateMetadata({ params }: { params: { seo?: string[] } 
     const isSpanish = translations === es
     
     if (specialPage.type === 'maternity') {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.amandi.bio'
+      const pageUrl = `${baseUrl}${path}`
+      const ogImage = `${baseUrl}/brand.png`
+      const title = isSpanish 
+        ? 'Aguacates Ecológicos para Embarazadas y Bebés | Avocados Amandi'
+        : 'Organic Avocados for Pregnant Women and Babies | Avocados Amandi'
+      const description = isSpanish
+        ? 'Aguacates ecológicos certificados perfectos para embarazadas y bebés. Rico en ácido fólico, omega-3 y nutrientes esenciales. Sin pesticidas, cultivados en Asturias.'
+        : 'Certified organic avocados perfect for pregnant women and babies. Rich in folic acid, omega-3 and essential nutrients. No pesticides, grown in Asturias.'
+
       return {
-        title: isSpanish 
-          ? 'Aguacates Ecológicos para Embarazadas y Bebés | Avocados Amandi'
-          : 'Organic Avocados for Pregnant Women and Babies | Avocados Amandi',
-        description: isSpanish
-          ? 'Aguacates ecológicos certificados perfectos para embarazadas y bebés. Rico en ácido fólico, omega-3 y nutrientes esenciales. Sin pesticidas, cultivados en Asturias.'
-          : 'Certified organic avocados perfect for pregnant women and babies. Rich in folic acid, omega-3 and essential nutrients. No pesticides, grown in Asturias.',
+        title,
+        description,
+        openGraph: {
+          title,
+          description,
+          url: pageUrl,
+          siteName: 'Avocados Amandi',
+          images: [
+            {
+              url: ogImage,
+              width: 1200,
+              height: 630,
+              alt: title,
+            },
+          ],
+          locale: isSpanish ? 'es_ES' : 'en_GB',
+          type: 'website',
+        },
+        twitter: {
+          card: 'summary_large_image',
+          title,
+          description,
+          images: [ogImage],
+        },
       }
     }
   }
@@ -74,9 +102,37 @@ export async function generateMetadata({ params }: { params: { seo?: string[] } 
   const translations: Translations = getTranslations(country.language)
   const countryName = country.name
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.amandi.bio'
+  const pageUrl = `${baseUrl}${path}`
+  const ogImage = `${baseUrl}/brand.png`
+  const title = `Order Organic Avocados Online in ${countryName} | Avocados Amandi`
+  const description = `Buy premium organic avocados from Asturias, Spain. Direct shipping to ${countryName}. No cold storage, tree-ripened fruit.`
+
   return {
-    title: `Order Organic Avocados Online in ${countryName} | Avocados Amandi`,
-    description: `Buy premium organic avocados from Asturias, Spain. Direct shipping to ${countryName}. No cold storage, tree-ripened fruit.`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: 'Avocados Amandi',
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: `Organic Avocados for ${countryName}`,
+        },
+      ],
+      locale: country.language === 'es' ? 'es_ES' : 'en_GB',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImage],
+    },
   }
 }
 

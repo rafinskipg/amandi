@@ -12,7 +12,6 @@ interface Props {
 
 export default function VideoFinca({ translations }: Props) {
   const t = translations.videoFinca
-  const videoId = 'buZ1w6yJBfk'
 
   return (
     <section id="video-finca" className={styles.section}>
@@ -25,13 +24,11 @@ export default function VideoFinca({ translations }: Props) {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <div className={styles.videoContainer}>
-              <iframe
-                src={`https://www.youtube.com/embed/${videoId}`}
-                title="Nuestra finca en Amandi"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className={styles.videoIframe}
+            <div className={styles.imageContainer}>
+              <img
+                src="/finca.jpeg"
+                alt="Nuestra finca en Amandi"
+                className={styles.fincaImage}
               />
             </div>
           </motion.div>
