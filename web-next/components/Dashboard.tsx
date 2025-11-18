@@ -817,7 +817,7 @@ export default function Dashboard({ onLogout }: DashboardProps) {
                                       </div>
                                       <div className={styles.statusLogContent}>
                                         <div className={styles.statusLogStatus}>
-                                          {log.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                          {log.status.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                         </div>
                                         {log.description && (
                                           <div className={styles.statusLogDescription}>{log.description}</div>
