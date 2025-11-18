@@ -3,9 +3,10 @@ import { db } from '@/lib/db'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { message, isIncident } = await request.json()
 
     if (!message || typeof message !== 'string') {
@@ -16,7 +17,7 @@ export async function POST(
     }
 
     // Verify order exists
-    const order = await db.getOrder(params.id)
+    const order = await db.getOrder(id)
     if (!order) {
       return NextResponse.json(
         { error: 'Order not found' },
@@ -25,7 +26,7 @@ export async function POST(
     }
 
     const orderMessage = await db.createOrderMessage(
-      params.id,
+      id,
       message,
       isIncident === true,
       true // fromCustomer
@@ -43,10 +44,11 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const messages = await db.getOrderMessages(params.id)
+    const { id } = await params
+    const messages = await db.getOrderMessages(id)
     return NextResponse.json({ messages })
   } catch (error: any) {
     console.error('Error fetching messages:', error)

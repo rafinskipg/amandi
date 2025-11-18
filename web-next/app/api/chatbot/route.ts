@@ -37,7 +37,7 @@ async function getOrderContext(orderNumber?: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, orderNumber, lang = 'en' } = await request.json()
+    const { message, orderNumber, lang = 'en', conversationHistory = [] } = await request.json()
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -53,24 +53,58 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if the last assistant message asked for an order number
+    const lastAssistantMessage = conversationHistory
+      .filter((msg: any) => msg.role === 'assistant')
+      .pop()?.content || ''
+    
+    const askedForOrderNumber = /(?:order number|número de pedido|pedido|order|tracking)/i.test(lastAssistantMessage) &&
+      /(?:provide|proporcionar|dame|give|send)/i.test(lastAssistantMessage)
+
     // Try to extract order number from message if not provided
     let extractedOrderNumber = orderNumber
+    let orderNumberFormatValid = false
+    
     if (!extractedOrderNumber) {
-      // Look for order number patterns (format: AVO + 9 alphanumeric chars, e.g., AVO123456789)
-      // Handle variations like "AVO-123456789" or "AVO123456789"
-      const orderNumberMatch = message.match(/\bAVO[-_]?([A-Z0-9]{9})\b/i)
-      if (orderNumberMatch) {
-        extractedOrderNumber = `AVO${orderNumberMatch[1].toUpperCase()}`
+      // First, try to match full AVO format (AVO + 9 alphanumeric chars = 12 total)
+      const fullOrderNumberMatch = message.match(/\bAVO[-_]?([A-Z0-9]{9})\b/i)
+      if (fullOrderNumberMatch) {
+        extractedOrderNumber = `AVO${fullOrderNumberMatch[1].toUpperCase()}`
+        orderNumberFormatValid = true
+      } else if (askedForOrderNumber) {
+        // If chatbot asked for order number, treat the entire message as potential order number
+        const messageTrimmed = message.trim().toUpperCase()
+        
+        // If it starts with AVO, use it as-is (might be partial or full)
+        if (/^AVO/i.test(messageTrimmed)) {
+          extractedOrderNumber = messageTrimmed.replace(/[-_]/, '')
+          orderNumberFormatValid = /^AVO[A-Z0-9]{9}$/i.test(extractedOrderNumber)
+        } else if (/^[A-Z0-9]{1,15}$/i.test(messageTrimmed)) {
+          // If it's just alphanumeric (could be partial order number without AVO prefix)
+          // Try prepending AVO and looking it up
+          extractedOrderNumber = `AVO${messageTrimmed}`
+          orderNumberFormatValid = false // Format will be validated after lookup attempt
+        }
       }
+    } else {
+      orderNumberFormatValid = /^AVO[A-Z0-9]{9}$/i.test(extractedOrderNumber)
     }
 
     // Get order context if order number is provided
     const orderContext = await getOrderContext(extractedOrderNumber)
     
+    // Validate format after lookup attempt
+    if (extractedOrderNumber && !orderContext) {
+      orderNumberFormatValid = /^AVO[A-Z0-9]{9}$/i.test(extractedOrderNumber)
+    }
+    
     // Build system context
     const systemContext = getChatbotContext(lang as 'es' | 'en')
     
     let orderInfo = ''
+    const orderNumberExample = 'AVO123456789' // Example format (AVO + 9 chars)
+    const isSpanish = lang === 'es'
+    
     if (orderContext) {
       orderInfo = `\n\nCurrent Order Information (Order ${orderContext.orderNumber}):
 - Status: ${orderContext.status}
@@ -81,7 +115,23 @@ ${orderContext.items.map(item => `  - ${item.productName} (${item.quantity}x) - 
 
 You can provide this order information to the customer.`
     } else if (extractedOrderNumber) {
-      orderInfo = `\n\nNote: The customer mentioned order number "${extractedOrderNumber}" but it was not found in the system. Inform them that the order number was not found and ask them to verify the order number.`
+      // Order number was provided but not found or invalid format
+      const formatExample = isSpanish 
+        ? `El formato correcto es: ${orderNumberExample} (AVO seguido de 9 caracteres alfanuméricos)`
+        : `The correct format is: ${orderNumberExample} (AVO followed by 9 alphanumeric characters)`
+      
+      if (!orderNumberFormatValid) {
+        orderInfo = `\n\nIMPORTANT: The customer provided "${extractedOrderNumber}" which doesn't match the correct order number format. The order number should be exactly 12 characters: AVO followed by 9 alphanumeric characters. ${formatExample}. Please inform them that the order number format is incorrect and provide the example format.`
+      } else {
+        orderInfo = `\n\nIMPORTANT: The customer provided order number "${extractedOrderNumber}" but it was not found in the system. ${formatExample}. Please inform them that the order number was not found, ask them to verify it (check their confirmation email), and provide the example format.`
+      }
+    } else if (askedForOrderNumber) {
+      // Chatbot asked for order number but user message doesn't contain a valid format
+      const formatExample = isSpanish
+        ? `El formato del número de pedido es: ${orderNumberExample} (AVO seguido de 9 caracteres alfanuméricos)`
+        : `The order number format is: ${orderNumberExample} (AVO followed by 9 alphanumeric characters)`
+      
+      orderInfo = `\n\nIMPORTANT: You asked for an order number, but the customer's message "${message}" doesn't appear to contain a valid order number format. ${formatExample}. Please ask them again for their order number and provide this example format. Explain that they can find it in their order confirmation email.`
     }
 
     // Check if user is asking about shipping costs - extract country and weight if mentioned
@@ -136,27 +186,44 @@ Instructions:
 - When calculating shipping costs, use the provided shipping calculation function results if available
 - If a customer asks about shipping but doesn't specify country/weight, ask them for these details
 - IMPORTANT - Order Tracking: When a customer asks about finding their order, tracking their order, or checking order status:
-  * ONLY ask for their ORDER NUMBER (format: AVO followed by 9 characters, e.g., AVO123456789)
+  * ONLY ask for their ORDER NUMBER (format: AVO followed by 9 alphanumeric characters, e.g., AVO123456789)
   * Do NOT ask for their name, email, products ordered, or any other information
-  * If order information is provided above, share it with the customer
+  * If order information is provided above, share it with the customer immediately
+  * If order number format is incorrect or order not found, provide the example format: AVO123456789
   * If no order number is provided, simply ask: "Could you please provide your order number?" (in Spanish: "¿Podrías proporcionarme tu número de pedido?")
 - Always respond in ${lang === 'es' ? 'Spanish' : 'English'}
 - If you don't know something, admit it and suggest contacting support
 - Keep responses concise but informative`
 
+    // Build messages array with conversation history
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      {
+        role: 'system',
+        content: systemPrompt,
+      },
+    ]
+
+    // Add conversation history (last 10 messages to keep context manageable)
+    const recentHistory = conversationHistory.slice(-10)
+    recentHistory.forEach((msg: any) => {
+      if (msg.role && msg.content) {
+        messages.push({
+          role: msg.role,
+          content: msg.content,
+        })
+      }
+    })
+
+    // Add current user message
+    messages.push({
+      role: 'user',
+      content: message,
+    })
+
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: message,
-        },
-      ],
+      messages: messages as any,
       temperature: 0.7,
       max_tokens: 500,
     })

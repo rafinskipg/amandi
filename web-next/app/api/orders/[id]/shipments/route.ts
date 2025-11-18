@@ -3,9 +3,10 @@ import { db } from '@/lib/db'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { trackingNumber, carrier, itemIds } = await request.json()
 
     if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
@@ -16,7 +17,7 @@ export async function POST(
     }
 
     const shipment = await db.createShipment(
-      params.id,
+      id,
       trackingNumber,
       carrier,
       itemIds
@@ -34,10 +35,11 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const shipments = await db.getShipmentsByOrderId(params.id)
+    const { id } = await params
+    const shipments = await db.getShipmentsByOrderId(id)
     return NextResponse.json({ shipments })
   } catch (error: any) {
     console.error('Error fetching shipments:', error)

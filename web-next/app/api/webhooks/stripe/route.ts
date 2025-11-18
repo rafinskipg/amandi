@@ -258,11 +258,6 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ received: true })
 }
 
-// For local testing, you can disable signature verification
-// In production, always verify the signature
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}
+// Note: In Next.js App Router, body parsing is handled automatically
+// No need for config export - raw body is available via request.text()
 

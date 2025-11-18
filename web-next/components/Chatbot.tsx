@@ -75,6 +75,14 @@ export default function Chatbot({ orderNumber, variant = 'bubble' }: ChatbotProp
     setIsLoading(true)
 
     try {
+      // Prepare conversation history (last 10 messages for context, including the new user message)
+      const conversationHistory = [...messages, newUserMessage]
+        .slice(-10)
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        }))
+
       const response = await fetch('/api/chatbot', {
         method: 'POST',
         headers: {
@@ -84,6 +92,7 @@ export default function Chatbot({ orderNumber, variant = 'bubble' }: ChatbotProp
           message: userMessage,
           orderNumber,
           lang,
+          conversationHistory,
         }),
       })
 

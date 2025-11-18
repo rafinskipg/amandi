@@ -3,9 +3,10 @@ import { db } from '@/lib/db'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { orderNumber: string } }
+  { params }: { params: Promise<{ orderNumber: string }> }
 ) {
   try {
+    const { orderNumber } = await params
     const { message, isIncident } = await request.json()
 
     if (!message || typeof message !== 'string') {
@@ -16,7 +17,7 @@ export async function POST(
     }
 
     // Find order by order number
-    const order = await db.getOrderByOrderNumber(params.orderNumber.toUpperCase())
+    const order = await db.getOrderByOrderNumber(orderNumber.toUpperCase())
     if (!order) {
       return NextResponse.json(
         { error: 'Order not found' },

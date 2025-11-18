@@ -10,6 +10,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function POST(request: NextRequest) {
   try {
     const { items, country, shippingCost, totalWeight, successUrl, cancelUrl, locale, hasSubscription } = await request.json()
+    
+    // Ensure locale is a valid type
+    const validLocale: 'es' | 'en' = (locale === 'es' || locale === 'en') ? locale : 'en'
 
     if (!items || items.length === 0) {
       return NextResponse.json(
@@ -53,10 +56,10 @@ export async function POST(request: NextRequest) {
       }
 
       const price = product.price > 0 ? product.price : 0
-      const productTitle = product.title?.[locale] || product.title?.en || 'Product'
+      const productTitle = product.title?.[validLocale] || product.title?.en || 'Product'
       
       // Add variety info to description if applicable
-      let description = product.description?.[locale] || product.description?.en || ''
+      let description = product.description?.[validLocale] || product.description?.en || ''
       if (item.variety) {
         const varietyName = item.variety === 'hass' ? 'Hass' : 'Lamb Hass'
         const isBox = product.category === 'avocados' && product.type === 'box' && product.id !== 'subscription'
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
         
         if (isBox && inSeason !== null && !inSeason) {
           // Add preorder note for out-of-season boxes
-          const preorderNote = locale === 'es' 
+          const preorderNote = validLocale === 'es' 
             ? ' (Preorden - Se enviará cuando llegue la temporada)'
             : ' (Preorder - Will ship when season arrives)'
           description = `${description} (${varietyName})${preorderNote}`
@@ -96,10 +99,10 @@ export async function POST(request: NextRequest) {
     const finalLineItems = [...lineItems]
     if (shippingCost && shippingCost > 0) {
       const shippingDescription = hasSubscription
-        ? (locale === 'es' 
+        ? (validLocale === 'es' 
             ? `2 envíos a ${country.toUpperCase()} (${totalWeight}kg total)`
             : `2 shipments to ${country.toUpperCase()} (${totalWeight}kg total)`)
-        : (locale === 'es' 
+        : (validLocale === 'es' 
             ? `Envío a ${country.toUpperCase()} (${totalWeight}kg)`
             : `Shipping to ${country.toUpperCase()} (${totalWeight}kg)`)
       
@@ -107,7 +110,7 @@ export async function POST(request: NextRequest) {
         price_data: {
           currency: 'eur',
           product_data: {
-            name: locale === 'es' ? 'Gastos de envío' : 'Shipping',
+            name: validLocale === 'es' ? 'Gastos de envío' : 'Shipping',
             description: shippingDescription,
           },
           unit_amount: Math.round(shippingCost * 100), // Convert to cents
@@ -123,7 +126,7 @@ export async function POST(request: NextRequest) {
       mode: 'payment',
       success_url: successUrl || `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/cancel`,
-      locale: locale === 'es' ? 'es' : 'en',
+      locale: validLocale === 'es' ? 'es' : 'en',
       shipping_address_collection: {
         allowed_countries: ['ES', 'PT', 'FR', 'DE', 'BE', 'DK', 'NL', 'SE', 'FI', 'NO', 'GB'],
       },

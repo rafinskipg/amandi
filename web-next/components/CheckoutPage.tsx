@@ -43,7 +43,7 @@ export default function CheckoutPage() {
 
   // Detect language
   const langMatch = pathname.match(/^\/([a-z]{2})/)
-  const lang = langMatch ? langMatch[1] : 'en'
+  const lang: 'es' | 'en' = (langMatch && (langMatch[1] === 'es' || langMatch[1] === 'en')) ? langMatch[1] : 'en'
   const t: Translations = getTranslations(lang)
   const isSpanish = t === es
 

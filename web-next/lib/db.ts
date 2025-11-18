@@ -36,6 +36,9 @@ export interface OrderItem {
   shipmentId?: string
 }
 
+// Type for creating order items (without id, shipped, shippedAt, shipmentId)
+export type CreateOrderItem = Omit<OrderItem, 'id' | 'shipped' | 'shippedAt' | 'shipmentId'>
+
 export interface Shipment {
   id: string
   orderId: string
@@ -70,7 +73,7 @@ export interface Event {
 // Database API
 export const db = {
   // Orders
-  createOrder: async (order: Omit<Order, 'id' | 'createdAt' | 'orderNumber'>): Promise<Order> => {
+  createOrder: async (order: Omit<Order, 'id' | 'createdAt' | 'orderNumber' | 'items'> & { items: CreateOrderItem[] }): Promise<Order> => {
     // Generate unique order number
     let orderNumber = generateOrderNumber()
     let attempts = 0

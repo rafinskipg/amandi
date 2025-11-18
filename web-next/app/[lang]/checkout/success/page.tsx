@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import CheckoutSuccess from '@/components/CheckoutSuccess'
 
@@ -40,6 +41,20 @@ export default function CheckoutSuccessPage({
 }) {
   const resolvedParams = params instanceof Promise ? params : Promise.resolve(params)
   
-  return <CheckoutSuccess params={resolvedParams} />
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '50vh',
+        fontSize: '1.2rem'
+      }}>
+        Loading...
+      </div>
+    }>
+      <CheckoutSuccess params={resolvedParams} />
+    </Suspense>
+  )
 }
 
