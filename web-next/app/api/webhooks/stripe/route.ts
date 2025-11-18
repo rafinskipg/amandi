@@ -22,17 +22,26 @@ export async function GET(request: NextRequest) {
   console.log('[Webhook] Received GET request (verification/health check)')
   console.log('[Webhook] URL:', request.url)
   console.log('[Webhook] User-Agent:', request.headers.get('user-agent'))
-  
+
   // Return 200 OK to indicate endpoint exists and is healthy
   // This prevents 307 redirects
+  // CRITICAL: Disable all caching for webhook endpoints
   return NextResponse.json(
-    { 
+    {
       status: 'ok',
       message: 'Stripe webhook endpoint is active',
       method: 'GET',
       timestamp: new Date().toISOString()
     },
-    { status: 200 }
+    {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'X-Vercel-Cache-Control': 'no-cache',
+      }
+    }
   )
 }
 
@@ -44,6 +53,10 @@ export async function OPTIONS(request: NextRequest) {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, stripe-signature',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'X-Vercel-Cache-Control': 'no-cache',
     },
   })
 }
@@ -61,12 +74,20 @@ export async function POST(request: NextRequest) {
     'user-agent': request.headers.get('user-agent'),
   })
 
+  // Helper function to add no-cache headers
+  const noCacheHeaders = {
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'X-Vercel-Cache-Control': 'no-cache',
+  }
+
   // Verify this is actually a POST request (not redirected)
   if (request.method !== 'POST') {
     console.error('[Webhook] Invalid method:', request.method)
     return NextResponse.json(
       { error: 'Method not allowed' },
-      { status: 405 }
+      { status: 405, headers: noCacheHeaders }
     )
   }
 
@@ -75,7 +96,7 @@ export async function POST(request: NextRequest) {
     console.error('STRIPE_WEBHOOK_SECRET is not set! Webhook verification will fail.')
     return NextResponse.json(
       { error: 'Webhook secret not configured' },
-      { status: 500 }
+      { status: 500, headers: noCacheHeaders }
     )
   }
 
@@ -90,7 +111,7 @@ export async function POST(request: NextRequest) {
     console.error('[Webhook] Missing stripe-signature header')
     return NextResponse.json(
       { error: 'No signature provided' },
-      { status: 400 }
+      { status: 400, headers: noCacheHeaders }
     )
   }
 
@@ -107,7 +128,15 @@ export async function POST(request: NextRequest) {
     console.error('[Webhook] Signature verification failed:', err.message)
     return NextResponse.json(
       { error: `Webhook Error: ${err.message}` },
-      { status: 400 }
+      {
+        status: 400,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'X-Vercel-Cache-Control': 'no-cache',
+        }
+      }
     )
   }
 
@@ -200,7 +229,15 @@ export async function POST(request: NextRequest) {
               orderNumber: updatedOrder!.orderNumber,
               message: 'Order updated to completed'
             },
-            { status: 200 }
+            {
+              status: 200,
+              headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+                'X-Vercel-Cache-Control': 'no-cache',
+              }
+            }
           )
         }
 
@@ -311,7 +348,15 @@ export async function POST(request: NextRequest) {
             orderNumber: order.orderNumber,
             warning: 'Order created as fallback (should not happen with new flow)'
           },
-          { status: 200 }
+          {
+            status: 200,
+            headers: {
+              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+              'X-Vercel-Cache-Control': 'no-cache',
+            }
+          }
         )
       } catch (error: any) {
         console.error('[Webhook] Error processing checkout.session.completed:', error)
@@ -323,7 +368,15 @@ export async function POST(request: NextRequest) {
             error: error.message,
             warning: 'Order processing failed but webhook processed'
           },
-          { status: 200 } // Return 200 so Stripe doesn't retry
+          {
+            status: 200, // Return 200 so Stripe doesn't retry
+            headers: {
+              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+              'X-Vercel-Cache-Control': 'no-cache',
+            }
+          }
         )
       }
     }
@@ -417,9 +470,18 @@ export async function POST(request: NextRequest) {
   }
 
   // Always return 200 OK to Stripe
+  // CRITICAL: Disable all caching for webhook endpoints
   return NextResponse.json(
     { received: true },
-    { status: 200 }
+    {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'X-Vercel-Cache-Control': 'no-cache',
+      }
+    }
   )
 }
 
