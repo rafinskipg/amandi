@@ -16,6 +16,14 @@ model Order {
   stripeSessionId String         @unique
   customerEmail   String?
   customerPhone   String?
+  // Shipping address
+  shippingName    String?
+  shippingLine1   String?
+  shippingLine2   String?
+  shippingCity    String?
+  shippingState   String?
+  shippingPostalCode String?
+  shippingCountry String?
   total           Float
   currency        String         @default("EUR")
   status          OrderStatus    @default(pending)
@@ -24,6 +32,7 @@ model Order {
   items           OrderItem[]
   shipments       Shipment[]
   messages        OrderMessage[]
+  statusLogs      OrderStatusLog[]
   
   @@index([status])
   @@index([createdAt])
@@ -104,4 +113,28 @@ enum EventType {
   checkout_completed
   checkout_cancelled
   chatbot_used
+}
+
+model OrderStatusLog {
+  id          String      @id @default(uuid())
+  orderId     String
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status      StatusLogType
+  description String?
+  metadata    Json?
+  createdAt   DateTime    @default(now())
+  
+  @@index([orderId])
+  @@index([createdAt])
+  @@index([status])
+}
+
+enum StatusLogType {
+  created
+  payment_confirmed
+  shipped
+  customer_contacted
+  reshipped
+  returned
+  delivered
 }

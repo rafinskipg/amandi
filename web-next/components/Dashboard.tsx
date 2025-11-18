@@ -27,6 +27,13 @@ interface Order {
   stripeSessionId: string
   customerEmail?: string
   customerPhone?: string
+  shippingName?: string
+  shippingLine1?: string
+  shippingLine2?: string
+  shippingCity?: string
+  shippingState?: string
+  shippingPostalCode?: string
+  shippingCountry?: string
   items: Array<{
     id: string
     productId: string
@@ -94,12 +101,16 @@ export default function Dashboard({ onLogout }: DashboardProps) {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
   const [orderShipments, setOrderShipments] = useState<Record<string, Shipment[]>>({})
   const [orderMessages, setOrderMessages] = useState<Record<string, OrderMessage[]>>({})
+  const [orderStatusLogs, setOrderStatusLogs] = useState<Record<string, any[]>>({})
   const [selectedItems, setSelectedItems] = useState<Record<string, string[]>>({})
   const [trackingNumber, setTrackingNumber] = useState<Record<string, string>>({})
   const [carrier, setCarrier] = useState<Record<string, string>>({})
   const [creatingShipment, setCreatingShipment] = useState<string | null>(null)
   const [newMessage, setNewMessage] = useState<Record<string, string>>({})
   const [sendingMessage, setSendingMessage] = useState<string | null>(null)
+  const [processingAction, setProcessingAction] = useState<string | null>(null)
+  const [showStickerModal, setShowStickerModal] = useState<string | null>(null)
+  const [stickerData, setStickerData] = useState<any>(null)
 
   const fetchData = async () => {
     try {
@@ -128,14 +139,17 @@ export default function Dashboard({ onLogout }: DashboardProps) {
 
   const fetchOrderDetails = async (orderId: string) => {
     try {
-      const [shipmentsRes, messagesRes] = await Promise.all([
+      const [shipmentsRes, messagesRes, statusLogsRes] = await Promise.all([
         fetch(`/api/orders/${orderId}/shipments`),
         fetch(`/api/orders/${orderId}/messages`),
+        fetch(`/api/orders/${orderId}/status-logs`),
       ])
       const shipmentsData = await shipmentsRes.json()
       const messagesData = await messagesRes.json()
+      const statusLogsData = await statusLogsRes.json()
       setOrderShipments(prev => ({ ...prev, [orderId]: shipmentsData.shipments || [] }))
       setOrderMessages(prev => ({ ...prev, [orderId]: messagesData.messages || [] }))
+      setOrderStatusLogs(prev => ({ ...prev, [orderId]: statusLogsData.logs || [] }))
     } catch (error) {
       console.error('Error fetching order details:', error)
     }
@@ -187,6 +201,22 @@ export default function Dashboard({ onLogout }: DashboardProps) {
       if (!response.ok) {
         throw new Error('Failed to create shipment')
       }
+
+      // Create status log for shipment
+      await fetch(`/api/orders/${orderId}/actions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          action: 'shipped',
+          description: `Shipment created with tracking ${trackingNumber[orderId] || 'N/A'}`,
+          metadata: {
+            trackingNumber: trackingNumber[orderId],
+            carrier: carrier[orderId],
+          },
+        }),
+      })
 
       // Refresh order details and orders list
       await fetchOrderDetails(orderId)
@@ -282,13 +312,68 @@ export default function Dashboard({ onLogout }: DashboardProps) {
         throw new Error('Failed to update order')
       }
 
-      // Refresh orders
+      // Create status log for status change
+      if (newStatus === 'delivered') {
+        await fetch(`/api/orders/${orderId}/actions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ action: 'delivered' }),
+        })
+      }
+
+      // Refresh orders and order details
       await fetchOrders()
+      await fetchOrderDetails(orderId)
     } catch (error) {
       console.error('Error updating order status:', error)
       alert('Failed to update order status')
     } finally {
       setUpdatingOrderId(null)
+    }
+  }
+
+  const handleOrderAction = async (orderId: string, action: 'return' | 'reship' | 'customer_contacted') => {
+    setProcessingAction(`${orderId}-${action}`)
+    try {
+      const response = await fetch(`/api/orders/${orderId}/actions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to process action')
+      }
+
+      // Refresh order details to show new status log
+      await fetchOrderDetails(orderId)
+      await fetchOrders()
+    } catch (error) {
+      console.error('Error processing order action:', error)
+      alert('Failed to process action')
+    } finally {
+      setProcessingAction(null)
+    }
+  }
+
+  const handleGenerateSticker = async (orderId: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/delivery-sticker`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate sticker')
+      }
+
+      setStickerData(data)
+      setShowStickerModal(orderId)
+    } catch (error: any) {
+      console.error('Error generating sticker:', error)
+      alert(error.message || 'Failed to generate sticker')
     }
   }
 
@@ -549,6 +634,31 @@ export default function Dashboard({ onLogout }: DashboardProps) {
                             {order.customerPhone && (
                               <p className={styles.orderPhone}>📱 {order.customerPhone}</p>
                             )}
+                            {/* Shipping Address */}
+                            {(order.shippingName || order.shippingLine1) && (
+                              <div className={styles.shippingAddress}>
+                                <p className={styles.shippingLabel}>📍 Shipping Address:</p>
+                                {order.shippingName && <p className={styles.shippingName}>{order.shippingName}</p>}
+                                {order.shippingLine1 && (
+                                  <p className={styles.shippingLine}>
+                                    {order.shippingLine1}
+                                    {order.shippingLine2 && `, ${order.shippingLine2}`}
+                                  </p>
+                                )}
+                                {(order.shippingCity || order.shippingState || order.shippingPostalCode) && (
+                                  <p className={styles.shippingCity}>
+                                    {[
+                                      order.shippingCity,
+                                      order.shippingState,
+                                      order.shippingPostalCode
+                                    ].filter(Boolean).join(', ')}
+                                  </p>
+                                )}
+                                {order.shippingCountry && (
+                                  <p className={styles.shippingCountry}>{order.shippingCountry}</p>
+                                )}
+                              </div>
+                            )}
                           </div>
                           <div className={styles.orderTotal}>
                             {formatCurrency(order.total, order.currency)}
@@ -616,6 +726,71 @@ export default function Dashboard({ onLogout }: DashboardProps) {
 
                         {isExpanded && (
                           <div className={styles.orderDetails}>
+                            {/* Order Actions */}
+                            <div className={styles.actionsSection}>
+                              <h4>Order Actions</h4>
+                              <div className={styles.actionButtons}>
+                                <button
+                                  onClick={() => handleOrderAction(order.id, 'customer_contacted')}
+                                  disabled={processingAction === `${order.id}-customer_contacted`}
+                                  className={styles.actionButton}
+                                >
+                                  {processingAction === `${order.id}-customer_contacted` ? '...' : '📞 Mark as Contacted'}
+                                </button>
+                                <button
+                                  onClick={() => handleOrderAction(order.id, 'reship')}
+                                  disabled={processingAction === `${order.id}-reship`}
+                                  className={styles.actionButton}
+                                >
+                                  {processingAction === `${order.id}-reship` ? '...' : '📦 Reship Order'}
+                                </button>
+                                <button
+                                  onClick={() => handleOrderAction(order.id, 'return')}
+                                  disabled={processingAction === `${order.id}-return`}
+                                  className={styles.actionButton}
+                                >
+                                  {processingAction === `${order.id}-return` ? '...' : '↩️ Mark as Returned'}
+                                </button>
+                                <button
+                                  onClick={() => handleGenerateSticker(order.id)}
+                                  className={styles.actionButton}
+                                >
+                                  🏷️ Generate Delivery Sticker
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Status Log Timeline */}
+                            {orderStatusLogs[order.id] && orderStatusLogs[order.id].length > 0 && (
+                              <div className={styles.statusLogSection}>
+                                <h4>Status History</h4>
+                                <div className={styles.statusTimeline}>
+                                  {orderStatusLogs[order.id].map((log, index) => (
+                                    <div key={log.id} className={styles.statusLogItem}>
+                                      <div className={styles.statusLogIcon}>
+                                        {log.status === 'created' && '📝'}
+                                        {log.status === 'payment_confirmed' && '💳'}
+                                        {log.status === 'shipped' && '📦'}
+                                        {log.status === 'reshipped' && '🔄'}
+                                        {log.status === 'customer_contacted' && '📞'}
+                                        {log.status === 'returned' && '↩️'}
+                                        {log.status === 'delivered' && '✅'}
+                                      </div>
+                                      <div className={styles.statusLogContent}>
+                                        <div className={styles.statusLogStatus}>
+                                          {log.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                        </div>
+                                        {log.description && (
+                                          <div className={styles.statusLogDescription}>{log.description}</div>
+                                        )}
+                                        <div className={styles.statusLogDate}>{formatDate(log.createdAt)}</div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
                             {/* Ship Products Section */}
                             <div className={styles.shipmentSection}>
                               <h4>Ship Products</h4>
@@ -764,6 +939,94 @@ export default function Dashboard({ onLogout }: DashboardProps) {
             )}
           </div>
         )}
+      </div>
+
+      {/* Delivery Sticker Modal */}
+      {showStickerModal && stickerData && (
+        <DeliveryStickerModal
+          data={stickerData}
+          onClose={() => {
+            setShowStickerModal(null)
+            setStickerData(null)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// Delivery Sticker Modal Component
+function DeliveryStickerModal({ data, onClose }: { data: any; onClose: () => void }) {
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
+
+  useEffect(() => {
+    // Generate QR code using a QR code API
+    // Using qrcode.js or similar library would be better, but for now using an API
+    const qrSize = 200
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(data.qrCodeData)}`
+    setQrCodeUrl(qrApiUrl)
+  }, [data.qrCodeData])
+
+  const handlePrint = () => {
+    window.print()
+  }
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h2>Delivery Sticker</h2>
+          <button onClick={onClose} className={styles.closeButton}>×</button>
+        </div>
+        <div className={styles.stickerContainer}>
+          <div className={styles.sticker}>
+            {/* Logo */}
+            <div className={styles.stickerLogo}>
+              <h1>🥑 Avocados Amandi</h1>
+            </div>
+
+            {/* Nice sentence */}
+            <div className={styles.stickerMessage}>
+              <p>Fresh avocados, delivered with care from our farm to your door</p>
+            </div>
+
+            {/* Shipping Address */}
+            <div className={styles.stickerAddress}>
+              <h3>Ship To:</h3>
+              {data.shippingName && <p className={styles.stickerName}>{data.shippingName}</p>}
+              <pre className={styles.stickerAddressText}>{data.shippingAddress}</pre>
+            </div>
+
+            {/* Order Info */}
+            <div className={styles.stickerOrderInfo}>
+              <div className={styles.stickerOrderNumber}>
+                <strong>Order:</strong> {data.orderNumber}
+              </div>
+              {data.trackingNumber && (
+                <div className={styles.stickerTracking}>
+                  <strong>Tracking:</strong> {data.trackingNumber}
+                  {data.carrier && ` (${data.carrier})`}
+                </div>
+              )}
+            </div>
+
+            {/* QR Code */}
+            <div className={styles.stickerQR}>
+              {qrCodeUrl && (
+                <img src={qrCodeUrl} alt="QR Code" className={styles.qrCodeImage} />
+              )}
+              <p className={styles.qrCodeLabel}>Scan to track your order</p>
+            </div>
+          </div>
+        </div>
+        <div className={styles.modalFooter}>
+          <button onClick={handlePrint} className={styles.printButton}>
+            🖨️ Print Sticker
+          </button>
+          <button onClick={onClose} className={styles.cancelButton}>
+            Close
+          </button>
+        </div>
       </div>
     </div>
   )

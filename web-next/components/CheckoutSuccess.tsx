@@ -202,12 +202,21 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
               <Link href={buildShopRoute(pathname)} className={styles.shopButton}>
                 {t.checkoutSuccess.continueShopping}
               </Link>
-              <Link 
-                href={`/${lang}/track`} 
-                className={styles.trackButton}
-              >
-                {t.checkoutSuccess.trackOrder}
-              </Link>
+              {orderInfo ? (
+                <Link 
+                  href={`/${lang}/track/${orderInfo.orderNumber}`} 
+                  className={styles.trackButton}
+                >
+                  {t.checkoutSuccess.trackOrder}
+                </Link>
+              ) : (
+                <Link 
+                  href={`/${lang}/track`} 
+                  className={styles.trackButton}
+                >
+                  {t.checkoutSuccess.trackOrder}
+                </Link>
+              )}
             </div>
 
             {/* Chatbot with order context */}

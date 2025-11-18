@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { getTranslations, es, type Translations } from '@/lib/translations'
 import LanguageSelector from './LanguageSelector'
 import Chatbot from './Chatbot'
@@ -40,9 +40,14 @@ interface OrderDetails {
   }>
 }
 
-export default function TrackOrder() {
+interface TrackOrderProps {
+  initialOrderNumber?: string
+}
+
+export default function TrackOrder({ initialOrderNumber }: TrackOrderProps = {}) {
   const pathname = usePathname()
-  const [orderNumber, setOrderNumber] = useState('')
+  const router = useRouter()
+  const [orderNumber, setOrderNumber] = useState(initialOrderNumber || '')
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -56,7 +61,14 @@ export default function TrackOrder() {
   const t: Translations = getTranslations(lang)
   const isSpanish = t === es
 
-  const handleSearch = async (e: React.FormEvent) => {
+  // If initialOrderNumber is provided, fetch order details automatically
+  useEffect(() => {
+    if (initialOrderNumber && !orderDetails && !loading) {
+      handleSearch(new Event('submit') as any, true)
+    }
+  }, [initialOrderNumber])
+
+  const handleSearch = async (e: React.FormEvent, skipRedirect = false) => {
     e.preventDefault()
     if (!orderNumber.trim()) {
       setError(t.trackOrder.errors.enterOrderNumber)
@@ -76,6 +88,11 @@ export default function TrackOrder() {
       }
 
       setOrderDetails(data)
+      
+      // Redirect to /track/{orderNumber} if not already there
+      if (!skipRedirect && pathname !== `/${lang}/track/${orderNumber.toUpperCase().trim()}`) {
+        router.push(`/${lang}/track/${orderNumber.toUpperCase().trim()}`)
+      }
     } catch (err: any) {
       setError(err.message || t.trackOrder.errors.searchError)
     } finally {

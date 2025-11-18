@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   console.log('[Webhook] Received POST request')
   console.log('[Webhook] URL:', request.url)
   console.log('[Webhook] Method:', request.method)
-  
+
   // Validate webhook secret is configured
   if (!webhookSecret) {
     console.error('STRIPE_WEBHOOK_SECRET is not set! Webhook verification will fail.')
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
-  
+
   console.log('[Webhook] Body length:', body.length)
   console.log('[Webhook] Has signature:', !!signature)
 
@@ -63,12 +63,12 @@ export async function POST(request: NextRequest) {
         // WEBHOOK HAS PRIORITY - Find order by client_reference_id first (orderId)
         // Then fallback to sessionId if client_reference_id not available
         let existingOrder = null
-        
+
         if (session.client_reference_id) {
           existingOrder = await db.getOrderById(session.client_reference_id)
           console.log('[Webhook] Found order by client_reference_id:', session.client_reference_id, existingOrder?.orderNumber)
         }
-        
+
         // Fallback to sessionId lookup
         if (!existingOrder) {
           existingOrder = await db.getOrderBySessionId(session.id)
@@ -77,14 +77,41 @@ export async function POST(request: NextRequest) {
 
         // If order exists, update it to completed (webhook has priority)
         if (existingOrder) {
-          // Update order status to completed and add customer info
+          // Extract shipping address from Stripe session
+          // Stripe stores shipping info in collected_information.shipping_details or customer_details
+          const shippingInfo = (session as any).collected_information?.shipping_details || (session as any).shipping_details
+          const shippingAddress = shippingInfo?.address || session.customer_details?.address
+          const shippingName = shippingInfo?.name || session.customer_details?.name
+
+          // Update order status to completed and add customer info + shipping address
           const updatedOrder = await db.updateOrder(existingOrder.id, {
             status: 'completed',
             completedAt: new Date(),
             customerEmail: session.customer_email || session.customer_details?.email || existingOrder.customerEmail,
             customerPhone: session.customer_details?.phone || existingOrder.customerPhone,
             stripeSessionId: session.id, // Ensure sessionId is set
+            shippingName: shippingName || existingOrder.shippingName,
+            shippingLine1: shippingAddress?.line1 || existingOrder.shippingLine1,
+            shippingLine2: shippingAddress?.line2 || existingOrder.shippingLine2,
+            shippingCity: shippingAddress?.city || existingOrder.shippingCity,
+            shippingState: shippingAddress?.state || existingOrder.shippingState,
+            shippingPostalCode: shippingAddress?.postal_code || existingOrder.shippingPostalCode,
+            shippingCountry: shippingAddress?.country || existingOrder.shippingCountry,
           })
+
+          // Create status log for payment confirmation
+          if (existingOrder.status !== 'completed') {
+            await db.createStatusLog({
+              orderId: updatedOrder!.id,
+              status: 'payment_confirmed',
+              description: `Payment confirmed for order ${updatedOrder!.orderNumber}`,
+              metadata: {
+                sessionId: session.id,
+                amount: updatedOrder!.total,
+                currency: updatedOrder!.currency,
+              },
+            })
+          }
 
           // Track checkout completed event
           await db.createEvent({
@@ -99,8 +126,8 @@ export async function POST(request: NextRequest) {
           })
 
           console.log('[Webhook] Order updated to completed:', updatedOrder!.id, 'Order Number:', updatedOrder!.orderNumber)
-          return NextResponse.json({ 
-            received: true, 
+          return NextResponse.json({
+            received: true,
             orderId: updatedOrder!.id,
             orderNumber: updatedOrder!.orderNumber,
             message: 'Order updated to completed'
@@ -109,7 +136,7 @@ export async function POST(request: NextRequest) {
 
         // If order doesn't exist (shouldn't happen with new flow, but handle gracefully)
         console.warn('[Webhook] Order not found for session:', session.id, 'client_reference_id:', session.client_reference_id)
-        
+
         // Retrieve the session with line items to create order
         const sessionWithLineItems = await stripe.checkout.sessions.retrieve(
           session.id,
@@ -174,8 +201,8 @@ export async function POST(request: NextRequest) {
         })
 
         console.log('[Webhook] Order created (fallback):', order.id, 'Order Number:', order.orderNumber)
-        return NextResponse.json({ 
-          received: true, 
+        return NextResponse.json({
+          received: true,
           orderId: order.id,
           orderNumber: order.orderNumber,
           warning: 'Order created as fallback (should not happen with new flow)'
@@ -183,8 +210,8 @@ export async function POST(request: NextRequest) {
       } catch (error: any) {
         console.error('[Webhook] Error processing checkout.session.completed:', error)
         // Don't fail the webhook, return success so Stripe doesn't retry
-        return NextResponse.json({ 
-          received: true, 
+        return NextResponse.json({
+          received: true,
           error: error.message,
           warning: 'Order processing failed but webhook processed'
         })

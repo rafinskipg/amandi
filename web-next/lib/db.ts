@@ -1,6 +1,6 @@
 // PostgreSQL database using Prisma
 import { prisma } from './prisma'
-import type { OrderStatus, EventType } from '@prisma/client'
+import type { OrderStatus, EventType, StatusLogType } from '@prisma/client'
 
 export interface Order {
   id: string
@@ -8,6 +8,14 @@ export interface Order {
   stripeSessionId: string
   customerEmail?: string
   customerPhone?: string
+  // Shipping address
+  shippingName?: string
+  shippingLine1?: string
+  shippingLine2?: string
+  shippingCity?: string
+  shippingState?: string
+  shippingPostalCode?: string
+  shippingCountry?: string
   items: OrderItem[]
   total: number
   currency: string
@@ -70,6 +78,49 @@ export interface Event {
   metadata?: Record<string, any>
 }
 
+export interface OrderStatusLog {
+  id: string
+  orderId: string
+  status: 'created' | 'payment_confirmed' | 'shipped' | 'customer_contacted' | 'reshipped' | 'returned' | 'delivered'
+  description?: string
+  metadata?: Record<string, any>
+  createdAt: Date
+}
+
+// Helper function to map Prisma Order to our Order interface
+function mapPrismaOrderToOrder(order: any): Order {
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    stripeSessionId: order.stripeSessionId,
+    customerEmail: order.customerEmail || undefined,
+    customerPhone: order.customerPhone || undefined,
+    shippingName: order.shippingName || undefined,
+    shippingLine1: order.shippingLine1 || undefined,
+    shippingLine2: order.shippingLine2 || undefined,
+    shippingCity: order.shippingCity || undefined,
+    shippingState: order.shippingState || undefined,
+    shippingPostalCode: order.shippingPostalCode || undefined,
+    shippingCountry: order.shippingCountry || undefined,
+    total: order.total,
+    currency: order.currency,
+    status: order.status as Order['status'],
+    createdAt: order.createdAt,
+    completedAt: order.completedAt || undefined,
+    items: order.items.map((item: any) => ({
+      id: item.id,
+      productId: item.productId,
+      productName: item.productName,
+      quantity: item.quantity,
+      price: item.price,
+      variety: item.variety || undefined,
+      shipped: item.shipped,
+      shippedAt: item.shippedAt || undefined,
+      shipmentId: item.shipmentId || undefined,
+    })),
+  }
+}
+
 // Database API
 export const db = {
   // Orders
@@ -90,6 +141,13 @@ export const db = {
         stripeSessionId: order.stripeSessionId,
         customerEmail: order.customerEmail,
         customerPhone: order.customerPhone,
+        shippingName: order.shippingName,
+        shippingLine1: order.shippingLine1,
+        shippingLine2: order.shippingLine2,
+        shippingCity: order.shippingCity,
+        shippingState: order.shippingState,
+        shippingPostalCode: order.shippingPostalCode,
+        shippingCountry: order.shippingCountry,
         total: order.total,
         currency: order.currency,
         status: order.status as OrderStatus,
@@ -109,29 +167,16 @@ export const db = {
       },
     })
 
-      return {
-        id: createdOrder.id,
-        orderNumber: createdOrder.orderNumber,
-        stripeSessionId: createdOrder.stripeSessionId,
-        customerEmail: createdOrder.customerEmail || undefined,
-        customerPhone: createdOrder.customerPhone || undefined,
-        total: createdOrder.total,
-        currency: createdOrder.currency,
-        status: createdOrder.status as Order['status'],
-        createdAt: createdOrder.createdAt,
-        completedAt: createdOrder.completedAt || undefined,
-        items: createdOrder.items.map(item => ({
-          id: item.id,
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          price: item.price,
-          variety: item.variety || undefined,
-          shipped: item.shipped,
-          shippedAt: item.shippedAt || undefined,
-          shipmentId: item.shipmentId || undefined,
-        })),
-      }
+      const order = mapPrismaOrderToOrder(createdOrder)
+      
+      // Create initial status log
+      await db.createStatusLog({
+        orderId: order.id,
+        status: 'created',
+        description: `Order ${order.orderNumber} was created`,
+      })
+      
+      return order
   },
 
   updateOrder: async (id: string, updates: Partial<Order>): Promise<Order | null> => {
@@ -144,35 +189,20 @@ export const db = {
           ...(updates.customerEmail !== undefined && { customerEmail: updates.customerEmail }),
           ...(updates.customerPhone !== undefined && { customerPhone: updates.customerPhone }),
           ...(updates.stripeSessionId !== undefined && { stripeSessionId: updates.stripeSessionId }),
+          ...(updates.shippingName !== undefined && { shippingName: updates.shippingName }),
+          ...(updates.shippingLine1 !== undefined && { shippingLine1: updates.shippingLine1 }),
+          ...(updates.shippingLine2 !== undefined && { shippingLine2: updates.shippingLine2 }),
+          ...(updates.shippingCity !== undefined && { shippingCity: updates.shippingCity }),
+          ...(updates.shippingState !== undefined && { shippingState: updates.shippingState }),
+          ...(updates.shippingPostalCode !== undefined && { shippingPostalCode: updates.shippingPostalCode }),
+          ...(updates.shippingCountry !== undefined && { shippingCountry: updates.shippingCountry }),
         },
         include: {
           items: true,
         },
       })
 
-      return {
-        id: updatedOrder.id,
-        orderNumber: updatedOrder.orderNumber,
-        stripeSessionId: updatedOrder.stripeSessionId,
-        customerEmail: updatedOrder.customerEmail || undefined,
-        customerPhone: updatedOrder.customerPhone || undefined,
-        total: updatedOrder.total,
-        currency: updatedOrder.currency,
-        status: updatedOrder.status as Order['status'],
-        createdAt: updatedOrder.createdAt,
-        completedAt: updatedOrder.completedAt || undefined,
-        items: updatedOrder.items.map(item => ({
-          id: item.id,
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          price: item.price,
-          variety: item.variety || undefined,
-          shipped: item.shipped,
-          shippedAt: item.shippedAt || undefined,
-          shipmentId: item.shipmentId || undefined,
-        })),
-      }
+      return mapPrismaOrderToOrder(updatedOrder)
     } catch (error) {
       return null
     }
@@ -194,29 +224,7 @@ export const db = {
         },
       })
 
-      return {
-        id: updatedOrder.id,
-        orderNumber: updatedOrder.orderNumber,
-        stripeSessionId: updatedOrder.stripeSessionId,
-        customerEmail: updatedOrder.customerEmail || undefined,
-        customerPhone: updatedOrder.customerPhone || undefined,
-        total: updatedOrder.total,
-        currency: updatedOrder.currency,
-        status: updatedOrder.status as Order['status'],
-        createdAt: updatedOrder.createdAt,
-        completedAt: updatedOrder.completedAt || undefined,
-        items: updatedOrder.items.map(item => ({
-          id: item.id,
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          price: item.price,
-          variety: item.variety || undefined,
-          shipped: item.shipped,
-          shippedAt: item.shippedAt || undefined,
-          shipmentId: item.shipmentId || undefined,
-        })),
-      }
+      return mapPrismaOrderToOrder(updatedOrder)
     } catch (error) {
       return null
     }
@@ -232,30 +240,7 @@ export const db = {
       })
 
       if (!order) return null
-
-      return {
-        id: order.id,
-        orderNumber: order.orderNumber,
-        stripeSessionId: order.stripeSessionId,
-        customerEmail: order.customerEmail || undefined,
-        customerPhone: order.customerPhone || undefined,
-        total: order.total,
-        currency: order.currency,
-        status: order.status as Order['status'],
-        createdAt: order.createdAt,
-        completedAt: order.completedAt || undefined,
-        items: order.items.map(item => ({
-          id: item.id,
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          price: item.price,
-          variety: item.variety || undefined,
-          shipped: item.shipped,
-          shippedAt: item.shippedAt || undefined,
-          shipmentId: item.shipmentId || undefined,
-        })),
-      }
+      return mapPrismaOrderToOrder(order)
     } catch (error) {
       return null
     }
@@ -271,30 +256,7 @@ export const db = {
       })
 
       if (!order) return null
-
-      return {
-        id: order.id,
-        orderNumber: order.orderNumber,
-        stripeSessionId: order.stripeSessionId,
-        customerEmail: order.customerEmail || undefined,
-        customerPhone: order.customerPhone || undefined,
-        total: order.total,
-        currency: order.currency,
-        status: order.status as Order['status'],
-        createdAt: order.createdAt,
-        completedAt: order.completedAt || undefined,
-        items: order.items.map(item => ({
-          id: item.id,
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          price: item.price,
-          variety: item.variety || undefined,
-          shipped: item.shipped,
-          shippedAt: item.shippedAt || undefined,
-          shipmentId: item.shipmentId || undefined,
-        })),
-      }
+      return mapPrismaOrderToOrder(order)
     } catch (error) {
       return null
     }
@@ -310,30 +272,7 @@ export const db = {
       })
 
       if (!order) return null
-
-      return {
-        id: order.id,
-        orderNumber: order.orderNumber,
-        stripeSessionId: order.stripeSessionId,
-        customerEmail: order.customerEmail || undefined,
-        customerPhone: order.customerPhone || undefined,
-        total: order.total,
-        currency: order.currency,
-        status: order.status as Order['status'],
-        createdAt: order.createdAt,
-        completedAt: order.completedAt || undefined,
-        items: order.items.map(item => ({
-          id: item.id,
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          price: item.price,
-          variety: item.variety || undefined,
-          shipped: item.shipped,
-          shippedAt: item.shippedAt || undefined,
-          shipmentId: item.shipmentId || undefined,
-        })),
-      }
+      return mapPrismaOrderToOrder(order)
     } catch (error) {
       return null
     }
@@ -389,29 +328,7 @@ export const db = {
       },
     })
 
-    return orders.map(order => ({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      stripeSessionId: order.stripeSessionId,
-      customerEmail: order.customerEmail || undefined,
-      customerPhone: order.customerPhone || undefined,
-      total: order.total,
-      currency: order.currency,
-      status: order.status as Order['status'],
-      createdAt: order.createdAt,
-      completedAt: order.completedAt || undefined,
-      items: order.items.map(item => ({
-        id: item.id,
-        productId: item.productId,
-        productName: item.productName,
-        quantity: item.quantity,
-        price: item.price,
-        variety: item.variety || undefined,
-        shipped: item.shipped,
-        shippedAt: item.shippedAt || undefined,
-        shipmentId: item.shipmentId || undefined,
-      })),
-    }))
+    return orders.map(order => mapPrismaOrderToOrder(order))
   },
 
   getCompletedOrders: async (): Promise<Order[]> => {
@@ -427,29 +344,7 @@ export const db = {
       },
     })
 
-    return orders.map(order => ({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      stripeSessionId: order.stripeSessionId,
-      customerEmail: order.customerEmail || undefined,
-      customerPhone: order.customerPhone || undefined,
-      total: order.total,
-      currency: order.currency,
-      status: order.status as Order['status'],
-      createdAt: order.createdAt,
-      completedAt: order.completedAt || undefined,
-      items: order.items.map(item => ({
-        id: item.id,
-        productId: item.productId,
-        productName: item.productName,
-        quantity: item.quantity,
-        price: item.price,
-        variety: item.variety || undefined,
-        shipped: item.shipped,
-        shippedAt: item.shippedAt || undefined,
-        shipmentId: item.shipmentId || undefined,
-      })),
-    }))
+    return orders.map(order => mapPrismaOrderToOrder(order))
   },
 
   // Get orders with pagination, search, and sorting
@@ -507,29 +402,7 @@ export const db = {
     ])
 
     return {
-      orders: orders.map(order => ({
-        id: order.id,
-        orderNumber: order.orderNumber,
-        stripeSessionId: order.stripeSessionId,
-        customerEmail: order.customerEmail || undefined,
-        customerPhone: order.customerPhone || undefined,
-        total: order.total,
-        currency: order.currency,
-        status: order.status as Order['status'],
-        createdAt: order.createdAt,
-        completedAt: order.completedAt || undefined,
-        items: order.items.map(item => ({
-          id: item.id,
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          price: item.price,
-          variety: item.variety || undefined,
-          shipped: item.shipped,
-          shippedAt: item.shippedAt || undefined,
-          shipmentId: item.shipmentId || undefined,
-        })),
-      })),
+      orders: orders.map(order => mapPrismaOrderToOrder(order)),
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -805,6 +678,43 @@ export const db = {
       isIncident: msg.isIncident,
       fromCustomer: msg.fromCustomer,
       createdAt: msg.createdAt,
+    }))
+  },
+
+  // Order Status Logs
+  createStatusLog: async (log: Omit<OrderStatusLog, 'id' | 'createdAt'>): Promise<OrderStatusLog> => {
+    const createdLog = await prisma.orderStatusLog.create({
+      data: {
+        orderId: log.orderId,
+        status: log.status as any,
+        description: log.description,
+        metadata: log.metadata as any,
+      },
+    })
+
+    return {
+      id: createdLog.id,
+      orderId: createdLog.orderId,
+      status: createdLog.status as OrderStatusLog['status'],
+      description: createdLog.description || undefined,
+      metadata: createdLog.metadata as Record<string, any> | undefined,
+      createdAt: createdLog.createdAt,
+    }
+  },
+
+  getStatusLogsByOrderId: async (orderId: string): Promise<OrderStatusLog[]> => {
+    const logs = await prisma.orderStatusLog.findMany({
+      where: { orderId },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    return logs.map(log => ({
+      id: log.id,
+      orderId: log.orderId,
+      status: log.status as OrderStatusLog['status'],
+      description: log.description || undefined,
+      metadata: log.metadata as Record<string, any> | undefined,
+      createdAt: log.createdAt,
     }))
   },
 }
