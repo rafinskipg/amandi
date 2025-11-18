@@ -7,6 +7,7 @@ import type { Translations } from '@/lib/translations'
 import type { CountryConfig } from '@/lib/countries'
 import { getCountryTranslation } from '@/lib/countryTranslations'
 import { buildProductRoute } from '@/lib/routes'
+import { products } from '@/lib/products'
 import styles from './EligeTuCaja.module.css'
 
 interface Props {
@@ -34,8 +35,13 @@ export default function EligeTuCaja({ translations, country }: Props) {
 
           <div className={styles.grid}>
             {t.boxes.map((box, index) => {
-              // Map box index to product ID
-              const productIds = ['box-3kg', 'box-5kg', 'subscription']
+              // Map box index to product ID (filter out hidden products)
+              const productIds = ['box-3kg', 'box-5kg', 'subscription'].filter(id => {
+                const product = products.find(p => p.id === id)
+                return product && product.inStock !== false
+              })
+              // Skip if this index doesn't exist after filtering
+              if (index >= productIds.length) return null
               const productId = productIds[index]
               const productUrl = buildProductRoute(pathname, productId)
               

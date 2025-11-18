@@ -61,7 +61,7 @@ export default function CheckoutPage() {
   const subtotal = getTotalPrice()
   const totalWeight = getTotalWeight()
   
-  // Check if subscription is in cart - it needs 2 shipments
+  // Check if subscription is in cart - it needs 2 shipments (hidden for now but keeping logic)
   const hasSubscription = items.some(item => item.product.id === 'subscription')
   const subscriptionShippingMultiplier = hasSubscription ? 2 : 1
   
@@ -187,7 +187,6 @@ export default function CheckoutPage() {
           successUrl,
           cancelUrl,
           locale: lang,
-          hasSubscription,
         }),
       })
 

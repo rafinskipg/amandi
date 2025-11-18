@@ -51,8 +51,6 @@ export default function VideoFinca({ translations }: Props) {
                 </div>
               ))}
             </div>
-
-            <button className="btn-primary">{t.cta}</button>
           </motion.div>
         </div>
       </div>

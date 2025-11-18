@@ -10,7 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(request: NextRequest) {
   try {
-    const { items, country, shippingCost, totalWeight, successUrl, cancelUrl, locale, hasSubscription } = await request.json()
+    const { items, country, shippingCost, totalWeight, successUrl, cancelUrl, locale } = await request.json()
     
     // Ensure locale is a valid type
     const validLocale: 'es' | 'en' = (locale === 'es' || locale === 'en') ? locale : 'en'
@@ -32,12 +32,12 @@ export async function POST(request: NextRequest) {
     // Check for multi-variety orders and season status
     const hasHass = items.some((item: any) => {
       const product = getProductById(item.productId)
-      const isBox = product?.category === 'avocados' && product?.type === 'box' && product?.id !== 'subscription'
+      const isBox = product?.category === 'avocados' && product?.type === 'box'
       return isBox && item.variety === 'hass'
     })
     const hasLambHass = items.some((item: any) => {
       const product = getProductById(item.productId)
-      const isBox = product?.category === 'avocados' && product?.type === 'box' && product?.id !== 'subscription'
+      const isBox = product?.category === 'avocados' && product?.type === 'box'
       return isBox && item.variety === 'lamb-hass'
     })
     const hasMultipleVarieties = hasHass && hasLambHass
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       let description = product.description?.[validLocale] || product.description?.en || ''
       if (item.variety) {
         const varietyName = item.variety === 'hass' ? 'Hass' : 'Lamb Hass'
-        const isBox = product.category === 'avocados' && product.type === 'box' && product.id !== 'subscription'
+        const isBox = product.category === 'avocados' && product.type === 'box'
         const inSeason = item.variety === 'hass' ? hassInSeason : lambHassInSeason
         
         if (isBox && inSeason !== null && !inSeason) {
@@ -99,13 +99,9 @@ export async function POST(request: NextRequest) {
     // Add shipping as a line item if shipping cost > 0
     const finalLineItems = [...lineItems]
     if (shippingCost && shippingCost > 0) {
-      const shippingDescription = hasSubscription
-        ? (validLocale === 'es' 
-            ? `2 envíos a ${country.toUpperCase()} (${totalWeight}kg total)`
-            : `2 shipments to ${country.toUpperCase()} (${totalWeight}kg total)`)
-        : (validLocale === 'es' 
-            ? `Envío a ${country.toUpperCase()} (${totalWeight}kg)`
-            : `Shipping to ${country.toUpperCase()} (${totalWeight}kg)`)
+      const shippingDescription = validLocale === 'es' 
+        ? `Envío a ${country.toUpperCase()} (${totalWeight}kg)`
+        : `Shipping to ${country.toUpperCase()} (${totalWeight}kg)`
       
       finalLineItems.push({
         price_data: {

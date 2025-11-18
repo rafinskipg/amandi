@@ -9,6 +9,7 @@ import type { CountryConfig } from '@/lib/countries'
 import { getCountryTranslation } from '@/lib/countryTranslations'
 import { es } from '@/lib/translations'
 import { buildProductRoute } from '@/lib/routes'
+import { products } from '@/lib/products'
 import styles from './Preorden.module.css'
 
 interface Props {
@@ -19,14 +20,8 @@ interface Props {
 export default function Preorden({ translations, country }: Props) {
   const pathname = usePathname()
   const t = translations.preorden
-  const [selectedBox, setSelectedBox] = useState('3kg')
-  const countryT = country ? getCountryTranslation(country.code) : null
   
-  // Determine box selector title based on language
-  const isSpanish = translations === es || country?.language === 'es'
-  const boxSelectorTitle = countryT?.preorden?.boxSelectorTitle || (isSpanish ? 'Elige tu caja' : 'Choose your box')
-
-  // Map selected box to product ID
+  // Filter out hidden products to determine initial selection
   const getProductId = (boxValue: string): string => {
     const boxToProductMap: Record<string, string> = {
       '3kg': 'box-3kg',
@@ -35,6 +30,24 @@ export default function Preorden({ translations, country }: Props) {
     }
     return boxToProductMap[boxValue] || 'box-3kg'
   }
+  
+  const availableBoxes = t.boxes.filter(box => {
+    const productId = getProductId(box.value)
+    const product = products.find(p => p.id === productId)
+    return product && product.inStock !== false
+  })
+  
+  const [selectedBox, setSelectedBox] = useState(availableBoxes[0]?.value || '3kg')
+  const countryT = country ? getCountryTranslation(country.code) : null
+  
+  // Determine box selector title based on language
+  const isSpanish = translations === es || country?.language === 'es'
+  const boxSelectorTitle = countryT?.preorden?.boxSelectorTitle || (isSpanish ? 'Elige tu caja' : 'Choose your box')
+
+  // Ensure selectedBox is valid (if subscription was selected but is now hidden, default to first available)
+  const validSelectedBox = availableBoxes.some(box => box.value === selectedBox) 
+    ? selectedBox 
+    : (availableBoxes[0]?.value || '3kg')
 
   const preorderButtonText = isSpanish ? 'Pre-ordenar' : 'Pre-order'
 
@@ -77,10 +90,10 @@ export default function Preorden({ translations, country }: Props) {
             <div className={styles.boxSelectorCard}>
               <h3 className={styles.boxSelectorTitle}>{boxSelectorTitle}</h3>
               <div className={styles.boxOptions}>
-                {t.boxes.map((box) => (
+                {availableBoxes.map((box) => (
                   <button
                     key={box.value}
-                    className={`${styles.boxOption} ${selectedBox === box.value ? styles.selected : ''}`}
+                    className={`${styles.boxOption} ${validSelectedBox === box.value ? styles.selected : ''}`}
                     onClick={() => setSelectedBox(box.value)}
                   >
                     {box.label}
@@ -88,7 +101,7 @@ export default function Preorden({ translations, country }: Props) {
                 ))}
               </div>
               <Link 
-                href={buildProductRoute(pathname, getProductId(selectedBox))}
+                href={buildProductRoute(pathname, getProductId(validSelectedBox))}
                 className={styles.preorderButton}
               >
                 {preorderButtonText}

@@ -98,7 +98,7 @@ export const products: Product[] = [
       es: ['2 cajas al año', 'Prioridad en envío', 'Precio especial'],
       en: ['2 boxes per year', 'Priority shipping', 'Special price']
     },
-    inStock: true,
+    inStock: false, // Hidden for now - subscription not implemented with Stripe yet
   },
   // Other Products
   {
@@ -276,11 +276,11 @@ export const getProductById = (id: string): Product | undefined => {
 }
 
 export const getProductsByType = (type: ProductType): Product[] => {
-  return products.filter(p => p.type === type)
+  return products.filter(p => p.type === type && (p.inStock !== false))
 }
 
 export const getProductsByCategory = (category: ProductCategory): Product[] => {
-  return products.filter(p => p.category === category)
+  return products.filter(p => p.category === category && (p.inStock !== false))
 }
 
 export const getRelatedProducts = (productId: string, limit: number = 4): Product[] => {
@@ -292,19 +292,19 @@ export const getRelatedProducts = (productId: string, limit: number = 4): Produc
     const complementaryProductIds = ['honey', 'olive-oil', 'cutting-board', 'hazelnuts']
     const complementaryProducts = complementaryProductIds
       .map(id => getProductById(id))
-      .filter((p): p is Product => p !== undefined)
+      .filter((p): p is Product => p !== undefined && p.inStock !== false)
     
-    // Also include other boxes (excluding current one)
+    // Also include other boxes (excluding current one and hidden products)
     const otherBoxes = products
-      .filter(p => p.type === 'box' && p.id !== productId)
+      .filter(p => p.type === 'box' && p.id !== productId && p.inStock !== false)
       .slice(0, 2)
     
     // Mix: 2 complementary products + 2 other boxes
     return [...complementaryProducts.slice(0, 2), ...otherBoxes].slice(0, limit)
   }
   
-  // For other products, show products from same category or type
+  // For other products, show products from same category or type (excluding hidden products)
   return products
-    .filter(p => p.id !== productId && (p.category === product.category || p.type === product.type))
+    .filter(p => p.id !== productId && (p.category === product.category || p.type === product.type) && p.inStock !== false)
     .slice(0, limit)
 }
