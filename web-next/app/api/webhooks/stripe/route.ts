@@ -10,6 +10,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
 export async function POST(request: NextRequest) {
+  // Log webhook request for debugging
+  console.log('[Webhook] Received POST request')
+  console.log('[Webhook] URL:', request.url)
+  console.log('[Webhook] Method:', request.method)
+  
   // Validate webhook secret is configured
   if (!webhookSecret) {
     console.error('STRIPE_WEBHOOK_SECRET is not set! Webhook verification will fail.')
@@ -21,6 +26,9 @@ export async function POST(request: NextRequest) {
 
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
+  
+  console.log('[Webhook] Body length:', body.length)
+  console.log('[Webhook] Has signature:', !!signature)
 
   if (!signature) {
     return NextResponse.json(
@@ -37,8 +45,9 @@ export async function POST(request: NextRequest) {
       signature,
       webhookSecret
     )
+    console.log('[Webhook] Event verified:', event.type, event.id)
   } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message)
+    console.error('[Webhook] Signature verification failed:', err.message)
     return NextResponse.json(
       { error: `Webhook Error: ${err.message}` },
       { status: 400 }
@@ -50,60 +59,77 @@ export async function POST(request: NextRequest) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session
 
-      // Retrieve the session with line items
-      const sessionWithLineItems = await stripe.checkout.sessions.retrieve(
-        session.id,
-        {
-          expand: ['line_items'],
-        }
-      )
-
-      const lineItems = sessionWithLineItems.line_items?.data || []
-
-      // Parse items from metadata
-      let items: any[] = []
       try {
-        if (session.metadata?.items) {
-          items = JSON.parse(session.metadata.items)
+        // Retrieve the session with line items
+        const sessionWithLineItems = await stripe.checkout.sessions.retrieve(
+          session.id,
+          {
+            expand: ['line_items'],
+          }
+        )
+
+        const lineItems = sessionWithLineItems.line_items?.data || []
+
+        // Parse items from metadata
+        let items: any[] = []
+        try {
+          if (session.metadata?.items) {
+            items = JSON.parse(session.metadata.items)
+          }
+        } catch (e) {
+          console.error('Error parsing items metadata:', e)
         }
-      } catch (e) {
-        console.error('Error parsing items metadata:', e)
+
+        // Create order
+        const orderItems = lineItems.map((item, index) => {
+          const metadataItem = items[index]
+          return {
+            productId: metadataItem?.productId || 'unknown',
+            productName: item.description || 'Unknown Product',
+            quantity: item.quantity || 1,
+            price: (item.price?.unit_amount || 0) / 100,
+            variety: metadataItem?.variety || undefined,
+          }
+        })
+
+        // Check if order already exists to prevent duplicates
+        const existingOrder = await db.getOrderBySessionId(session.id)
+        if (existingOrder) {
+          console.log('Order already exists for session:', session.id, 'Order:', existingOrder.orderNumber)
+          return NextResponse.json({ received: true, orderId: existingOrder.id })
+        }
+
+        const order = await db.createOrder({
+          stripeSessionId: session.id,
+          customerEmail: session.customer_email || session.customer_details?.email || undefined,
+          customerPhone: session.customer_details?.phone || undefined,
+          items: orderItems,
+          total: (session.amount_total || 0) / 100,
+          currency: session.currency || 'eur',
+          status: 'completed',
+          completedAt: new Date(),
+        })
+
+        // Track checkout completed event
+        await db.createEvent({
+          type: 'checkout_completed',
+          sessionId: session.id,
+          metadata: {
+            orderId: order.id,
+            total: order.total,
+          },
+        })
+
+        console.log('Order created:', order.id, 'Order Number:', order.orderNumber)
+      } catch (error: any) {
+        console.error('Error processing checkout.session.completed:', error)
+        // Don't fail the webhook, return success so Stripe doesn't retry
+        return NextResponse.json({ 
+          received: true, 
+          error: error.message,
+          warning: 'Order creation failed but webhook processed'
+        })
       }
-
-      // Create order
-      const orderItems = lineItems.map((item, index) => {
-        const metadataItem = items[index]
-        return {
-          productId: metadataItem?.productId || 'unknown',
-          productName: item.description || 'Unknown Product',
-          quantity: item.quantity || 1,
-          price: (item.price?.unit_amount || 0) / 100,
-          variety: metadataItem?.variety || undefined,
-        }
-      })
-
-      const order = await db.createOrder({
-        stripeSessionId: session.id,
-        customerEmail: session.customer_email || session.customer_details?.email || undefined,
-        customerPhone: session.customer_details?.phone || undefined,
-        items: orderItems,
-        total: (session.amount_total || 0) / 100,
-        currency: session.currency || 'eur',
-        status: 'completed',
-        completedAt: new Date(),
-      })
-
-      // Track checkout completed event
-      await db.createEvent({
-        type: 'checkout_completed',
-        sessionId: session.id,
-        metadata: {
-          orderId: order.id,
-          total: order.total,
-        },
-      })
-
-      console.log('Order created:', order.id)
       break
     }
 

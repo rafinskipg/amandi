@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
@@ -27,15 +27,21 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [lang, setLang] = useState<'es' | 'en'>('es')
+  const hasInitialized = useRef(false)
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Extract values once to avoid dependency issues
+  const sessionIdParam = searchParams.get('session_id')
+  const langMatch = pathname.match(/^\/([a-z]{2})/)
+  const detectedLang = langMatch ? langMatch[1] : 'en'
 
   useEffect(() => {
-    // Detect language from pathname
-    const langMatch = pathname.match(/^\/([a-z]{2})/)
-    const detectedLang = langMatch ? langMatch[1] : 'en'
-    setLang(detectedLang as 'es' | 'en')
+    // Prevent multiple initializations
+    if (hasInitialized.current) return
+    hasInitialized.current = true
 
-    // Get session ID from URL
-    const sessionIdParam = searchParams.get('session_id')
+    // Set language
+    setLang(detectedLang as 'es' | 'en')
     if (sessionIdParam) {
       setSessionId(sessionIdParam)
       
@@ -55,10 +61,15 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
               status: data.order.status,
             })
             setLoading(false)
+            // Clear any pending retries
+            if (retryTimeoutRef.current) {
+              clearTimeout(retryTimeoutRef.current)
+              retryTimeoutRef.current = null
+            }
           } else if (attempts < maxAttempts) {
             // Order not created yet, retry after delay
             attempts++
-            setTimeout(fetchOrder, retryDelay)
+            retryTimeoutRef.current = setTimeout(fetchOrder, retryDelay)
           } else {
             // Max attempts reached, stop loading
             setLoading(false)
@@ -67,7 +78,7 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
           console.error('Error fetching order:', err)
           if (attempts < maxAttempts) {
             attempts++
-            setTimeout(fetchOrder, retryDelay)
+            retryTimeoutRef.current = setTimeout(fetchOrder, retryDelay)
           } else {
             setLoading(false)
           }
@@ -80,9 +91,17 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
       setLoading(false)
     }
 
-    // Clear cart on successful checkout
+    // Clear cart on successful checkout (only once)
     clearCart()
-  }, [pathname, searchParams, clearCart])
+
+    // Cleanup function to clear any pending timeouts
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
+        retryTimeoutRef.current = null
+      }
+    }
+  }, []) // Empty dependency array - only run once on mount
 
   const t: Translations = getTranslations(lang)
   const isSpanish = t === es
