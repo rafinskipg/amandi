@@ -126,8 +126,15 @@ export default function Dashboard({ onLogout }: DashboardProps) {
 
   useEffect(() => {
     fetchData()
+    // Also fetch orders count for the tab label
+    fetchOrders()
     // Refresh data every 30 seconds
-    const interval = setInterval(fetchData, 30000)
+    const interval = setInterval(() => {
+      fetchData()
+      if (activeTab === 'orders') {
+        fetchOrders()
+      }
+    }, 30000)
     return () => clearInterval(interval)
   }, [])
 
@@ -300,6 +307,8 @@ export default function Dashboard({ onLogout }: DashboardProps) {
   const handleStatusChange = async (orderId: string, newStatus: Order['status']) => {
     setUpdatingOrderId(orderId)
     try {
+      const order = ordersResponse.orders.find(o => o.id === orderId)
+      
       const response = await fetch(`/api/orders/${orderId}`, {
         method: 'PATCH',
         headers: {
@@ -312,7 +321,27 @@ export default function Dashboard({ onLogout }: DashboardProps) {
         throw new Error('Failed to update order')
       }
 
-      // Create status log for status change
+      // Create status log and event for status change
+      if (newStatus === 'completed' && order?.status === 'pending') {
+        // If marking pending order as completed, create checkout_completed event
+        await fetch(`/api/events`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'checkout_completed',
+            sessionId: order.stripeSessionId,
+            metadata: {
+              orderId: orderId,
+              orderNumber: order.orderNumber,
+              total: order.total,
+              manuallyCompleted: true,
+            },
+          }),
+        })
+      }
+      
       if (newStatus === 'delivered') {
         await fetch(`/api/orders/${orderId}/actions`, {
           method: 'POST',
@@ -323,9 +352,10 @@ export default function Dashboard({ onLogout }: DashboardProps) {
         })
       }
 
-      // Refresh orders and order details
+      // Refresh orders, order details, and metrics
       await fetchOrders()
       await fetchOrderDetails(orderId)
+      await fetchData() // Refresh metrics
     } catch (error) {
       console.error('Error updating order status:', error)
       alert('Failed to update order status')
@@ -703,6 +733,15 @@ export default function Dashboard({ onLogout }: DashboardProps) {
                             >
                               {isExpanded ? '▼' : '▶'} Details
                             </button>
+                            {order.status === 'pending' && (
+                              <button
+                                onClick={() => handleStatusChange(order.id, 'completed')}
+                                disabled={updatingOrderId === order.id}
+                                className={styles.statusButton}
+                              >
+                                {updatingOrderId === order.id ? '...' : 'Mark as Completed'}
+                              </button>
+                            )}
                             {order.status === 'completed' && (
                               <button
                                 onClick={() => handleStatusChange(order.id, 'delivered')}

@@ -167,16 +167,16 @@ export const db = {
       },
     })
 
-      const order = mapPrismaOrderToOrder(createdOrder)
+      const mappedOrder = mapPrismaOrderToOrder(createdOrder)
       
       // Create initial status log
       await db.createStatusLog({
-        orderId: order.id,
+        orderId: mappedOrder.id,
         status: 'created',
-        description: `Order ${order.orderNumber} was created`,
+        description: `Order ${mappedOrder.orderNumber} was created`,
       })
       
-      return order
+      return mappedOrder
   },
 
   updateOrder: async (id: string, updates: Partial<Order>): Promise<Order | null> => {
@@ -496,7 +496,9 @@ export const db = {
       prisma.order.count(),
       prisma.order.count({ where: { status: 'completed' } }),
       prisma.order.aggregate({
-        where: { status: 'completed' },
+        where: { 
+          status: { in: ['completed', 'delivered'] } // Count both completed and delivered orders for revenue
+        },
         _sum: { total: true },
       }),
       prisma.event.count({ where: { type: 'add_to_cart' } }),
