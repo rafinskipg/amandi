@@ -173,18 +173,36 @@ export async function POST(request: NextRequest) {
 
         // If order exists, update it to completed (webhook has priority)
         if (existingOrder) {
-          // Extract shipping address from Stripe session
+          // Extract shipping address and customer info from Stripe session
           // Stripe stores shipping info in collected_information.shipping_details or customer_details
           const shippingInfo = (session as any).collected_information?.shipping_details || (session as any).shipping_details
           const shippingAddress = shippingInfo?.address || session.customer_details?.address
-          const shippingName = shippingInfo?.name || session.customer_details?.name
+
+          // Extract name - prioritize shipping name, then customer name
+          const shippingName = shippingInfo?.name || session.customer_details?.name || session.customer_details?.individual_name
+
+          // Extract phone - can be in customer_details.phone or collected_information.phone_number
+          // When phone_number_collection is enabled, phone is in customer_details.phone
+          const customerPhone = session.customer_details?.phone ||
+            (session as any).collected_information?.phone_number ||
+            undefined
+
+          // Extract email - prioritize customer_email, then customer_details.email
+          const customerEmail = session.customer_email || session.customer_details?.email || existingOrder.customerEmail
+
+          console.log('[Webhook] Customer info:', {
+            email: customerEmail,
+            phone: customerPhone,
+            name: shippingName,
+            hasShippingAddress: !!shippingAddress,
+          })
 
           // Update order status to completed and add customer info + shipping address
           const updatedOrder = await db.updateOrder(existingOrder.id, {
             status: 'completed',
             completedAt: new Date(),
-            customerEmail: session.customer_email || session.customer_details?.email || existingOrder.customerEmail,
-            customerPhone: session.customer_details?.phone || existingOrder.customerPhone,
+            customerEmail: customerEmail,
+            customerPhone: customerPhone || existingOrder.customerPhone,
             stripeSessionId: session.id, // Ensure sessionId is set
             shippingName: shippingName || existingOrder.shippingName,
             shippingLine1: shippingAddress?.line1 || existingOrder.shippingLine1,
@@ -316,12 +334,28 @@ export async function POST(request: NextRequest) {
           throw new Error('No valid order items found in webhook payload')
         }
 
+        // Extract customer info for fallback order creation
+        const shippingInfo = (session as any).collected_information?.shipping_details || (session as any).shipping_details
+        const shippingAddress = shippingInfo?.address || session.customer_details?.address
+        const shippingName = shippingInfo?.name || session.customer_details?.name || session.customer_details?.individual_name
+        const customerPhone = session.customer_details?.phone ||
+          (session as any).collected_information?.phone_number ||
+          undefined
+        const customerEmail = session.customer_email || session.customer_details?.email || undefined
+
         // Create order as fallback (shouldn't happen with new flow)
         console.log('[Webhook] Creating order with', orderItems.length, 'items, total:', (session.amount_total || 0) / 100)
         const order = await db.createOrder({
           stripeSessionId: session.id,
-          customerEmail: session.customer_email || session.customer_details?.email || undefined,
-          customerPhone: session.customer_details?.phone || undefined,
+          customerEmail: customerEmail,
+          customerPhone: customerPhone,
+          shippingName: shippingName,
+          shippingLine1: shippingAddress?.line1,
+          shippingLine2: shippingAddress?.line2,
+          shippingCity: shippingAddress?.city,
+          shippingState: shippingAddress?.state,
+          shippingPostalCode: shippingAddress?.postal_code,
+          shippingCountry: shippingAddress?.country,
           items: orderItems,
           total: (session.amount_total || 0) / 100,
           currency: session.currency || 'eur',

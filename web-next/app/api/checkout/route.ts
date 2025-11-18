@@ -165,11 +165,16 @@ export async function POST(request: NextRequest) {
       success_url: successUrl || `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/cancel`,
       locale: validLocale === 'es' ? 'es' : 'en',
+      // Collect shipping address (includes name)
       shipping_address_collection: {
         allowed_countries: ['ES', 'PT', 'FR', 'DE', 'BE', 'DK', 'NL', 'SE', 'FI', 'NO', 'GB'],
       },
-      // Stripe will automatically collect email and phone during checkout
-      // We don't need to explicitly enable these as they're collected with shipping address
+      // CRITICAL: Enable phone number collection
+      phone_number_collection: {
+        enabled: true,
+      },
+      // Email is collected automatically, but we can be explicit
+      customer_email: undefined, // Let Stripe collect it during checkout
       metadata: {
         // Store cart items in metadata for order processing
         items: JSON.stringify(items.map((item: any) => ({
