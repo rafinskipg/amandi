@@ -10,7 +10,7 @@ import Footer from '@/components/Footer'
 import LanguageSelector from '@/components/LanguageSelector'
 import { getCountryByPath, getAllSeoPaths } from '@/lib/countries'
 import { getSpecialSeoPageByPath, getAllSpecialSeoPaths } from '@/lib/seoPages'
-import { es, en, type Translations } from '@/lib/translations'
+import { getTranslations, es, type Translations } from '@/lib/translations'
 import type { Metadata } from 'next'
 
 export async function generateStaticParams() {
@@ -46,15 +46,17 @@ export async function generateMetadata({ params }: { params: { seo?: string[] } 
   // Check for special SEO pages first
   const specialPage = getSpecialSeoPageByPath(path)
   if (specialPage) {
-    const lang = path.startsWith('/es/') ? 'es' : 'en'
-    const translations: Translations = lang === 'es' ? es : en
+    const langMatch = path.match(/^\/([a-z]{2})/)
+    const lang = langMatch ? langMatch[1] : 'en'
+    const translations: Translations = getTranslations(lang)
+    const isSpanish = translations === es
     
     if (specialPage.type === 'maternity') {
       return {
-        title: lang === 'es' 
+        title: isSpanish 
           ? 'Aguacates Ecológicos para Embarazadas y Bebés | Avocados Amandi'
           : 'Organic Avocados for Pregnant Women and Babies | Avocados Amandi',
-        description: lang === 'es'
+        description: isSpanish
           ? 'Aguacates ecológicos certificados perfectos para embarazadas y bebés. Rico en ácido fólico, omega-3 y nutrientes esenciales. Sin pesticidas, cultivados en Asturias.'
           : 'Certified organic avocados perfect for pregnant women and babies. Rich in folic acid, omega-3 and essential nutrients. No pesticides, grown in Asturias.',
       }
@@ -69,7 +71,7 @@ export async function generateMetadata({ params }: { params: { seo?: string[] } 
     }
   }
 
-  const translations: Translations = country.language === 'es' ? es : en
+  const translations: Translations = getTranslations(country.language)
   const countryName = country.name
 
   return {
@@ -91,8 +93,9 @@ export default async function SeoPage({ params }: { params: { seo?: string[] } |
   // Check for special SEO pages first
   const specialPage = getSpecialSeoPageByPath(path)
   if (specialPage) {
-    const lang = path.startsWith('/es/') ? 'es' : 'en'
-    const translations: Translations = lang === 'es' ? es : en
+    const langMatch = path.match(/^\/([a-z]{2})/)
+    const lang = langMatch ? langMatch[1] : 'en'
+    const translations: Translations = getTranslations(lang)
     
     if (specialPage.type === 'maternity') {
       return (
@@ -116,7 +119,7 @@ export default async function SeoPage({ params }: { params: { seo?: string[] } |
     notFound()
   }
 
-  const translations: Translations = country.language === 'es' ? es : en
+  const translations: Translations = getTranslations(country.language)
 
   return (
     <div className="app">

@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
-import { es, en, type Translations } from '@/lib/translations'
+import { getTranslations, es, type Translations } from '@/lib/translations'
 import { buildShopRoute, buildProductRoute } from '@/lib/routes'
 import type { AvocadoVariety } from '@/lib/varieties'
+import { isVarietyInSeason, getSeasonDescription } from '@/lib/varieties'
 import type { CountryCode } from '@/lib/countries'
 import { calculateShippingCost, getShippingCost } from '@/lib/shipping'
 import { countries } from '@/lib/countries'
@@ -20,15 +21,15 @@ export default function CheckoutPage() {
   const { items, removeFromCart, updateQuantity, getTotalPrice, getTotalWeight, clearCart } = useCart()
   const [isLoading, setIsLoading] = useState(false)
   
-  // Load selected country from localStorage or default to 'es'
-  const [selectedCountry, setSelectedCountry] = useState<CountryCode>(() => {
+  // Load selected country from localStorage, but don't default to anything
+  const [selectedCountry, setSelectedCountry] = useState<CountryCode | ''>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('amandi-selected-country')
       if (saved && Object.values(countries).some(c => c.code === saved)) {
         return saved as CountryCode
       }
     }
-    return 'es'
+    return ''
   })
   
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
@@ -41,13 +42,13 @@ export default function CheckoutPage() {
   }, [selectedCountry])
 
   // Detect language
-  const langMatch = pathname.match(/^\/(en|es)/)
-  const lang = (langMatch ? langMatch[1] : 'es') as 'es' | 'en'
-  const isSpanish = lang === 'es'
-  const t: Translations = isSpanish ? es : en
+  const langMatch = pathname.match(/^\/([a-z]{2})/)
+  const lang = langMatch ? langMatch[1] : 'en'
+  const t: Translations = getTranslations(lang)
+  const isSpanish = t === es
 
   const formatPrice = (price: number, currency: string = 'EUR') => {
-    return new Intl.NumberFormat(lang === 'es' ? 'es-ES' : 'en-GB', {
+    return new Intl.NumberFormat(isSpanish ? 'es-ES' : 'en-GB', {
       style: 'currency',
       currency: currency,
     }).format(price)
@@ -59,9 +60,49 @@ export default function CheckoutPage() {
 
   const subtotal = getTotalPrice()
   const totalWeight = getTotalWeight()
-  const shippingCost = calculateShippingCost(selectedCountry, totalWeight, subtotal)
+  
+  // Check if subscription is in cart - it needs 2 shipments
+  const hasSubscription = items.some(item => item.product.id === 'subscription')
+  const subscriptionShippingMultiplier = hasSubscription ? 2 : 1
+  
+  // Calculate shipping cost (multiply by 2 if subscription)
+  const baseShippingCost = selectedCountry ? calculateShippingCost(selectedCountry, totalWeight, subtotal) : 0
+  const shippingCost = baseShippingCost * subscriptionShippingMultiplier
   const total = subtotal + shippingCost
-  const shippingInfo = getShippingCost(selectedCountry)
+  const shippingInfo = selectedCountry ? getShippingCost(selectedCountry) : null
+
+  // Check for season status and multi-variety orders
+  const seasonWarnings = useMemo(() => {
+    const warnings: Array<{ variety: AvocadoVariety; inSeason: boolean; season: string }> = []
+    const hasHass = items.some(item => {
+      const isBox = item.product.category === 'avocados' && item.product.type === 'box' && item.product.id !== 'subscription'
+      return isBox && item.variety === 'hass'
+    })
+    const hasLambHass = items.some(item => {
+      const isBox = item.product.category === 'avocados' && item.product.type === 'box' && item.product.id !== 'subscription'
+      return isBox && item.variety === 'lamb-hass'
+    })
+
+    if (hasHass) {
+      warnings.push({
+        variety: 'hass',
+        inSeason: isVarietyInSeason('hass'),
+        season: getSeasonDescription('hass', lang),
+      })
+    }
+    if (hasLambHass) {
+      warnings.push({
+        variety: 'lamb-hass',
+        inSeason: isVarietyInSeason('lamb-hass'),
+        season: getSeasonDescription('lamb-hass', lang),
+      })
+    }
+
+    return warnings
+  }, [items, lang])
+
+  const hasMultipleVarieties = seasonWarnings.length === 2
+  const hasOutOfSeasonBoxes = seasonWarnings.some(w => !w.inSeason)
 
   const handleQuantityChange = (productId: string, newQuantity: number, variety?: AvocadoVariety) => {
     if (newQuantity < 1) {
@@ -82,6 +123,11 @@ export default function CheckoutPage() {
 
   const handleCompleteCheckout = async () => {
     if (items.length === 0) return
+    
+    if (!selectedCountry) {
+      setCheckoutError(t.checkout.errors.selectCountry)
+      return
+    }
 
     setIsLoading(true)
 
@@ -141,6 +187,7 @@ export default function CheckoutPage() {
           successUrl,
           cancelUrl,
           locale: lang,
+          hasSubscription,
         }),
       })
 
@@ -299,6 +346,26 @@ export default function CheckoutPage() {
                       </div>
                     )
                   })}
+                  
+                  {/* A little surprise row */}
+                  <div className={styles.cartItem}>
+                    <div className={styles.itemImage}>
+                      <div className={styles.surpriseIcon}>🎁</div>
+                    </div>
+                    <div className={styles.itemDetails}>
+                      <h3 className={styles.itemTitle}>
+                        {t.checkout.surprise.title}
+                      </h3>
+                      <p className={styles.itemUnit}>
+                        {t.checkout.surprise.description}
+                      </p>
+                    </div>
+                    <div className={styles.itemQuantity}></div>
+                    <div className={styles.itemTotal}>
+                      <p className={styles.itemTotalPrice}>—</p>
+                    </div>
+                    <div></div>
+                  </div>
               </div>
 
               {/* Summary and Country Selector - Right Side */}
@@ -316,18 +383,29 @@ export default function CheckoutPage() {
                     <select
                       required
                       value={selectedCountry}
-                      onChange={(e) => setSelectedCountry(e.target.value as CountryCode)}
+                      onChange={(e) => {
+                        const country = e.target.value as CountryCode
+                        setSelectedCountry(country)
+                        setCheckoutError(null)
+                      }}
                       className={styles.formSelect}
                     >
+                      <option value="">{t.checkout.selectCountryPlaceholder}</option>
                       {Object.values(countries).map((country) => (
                         <option key={country.code} value={country.code}>
                           {country.name}
                         </option>
                       ))}
                     </select>
-                    {totalWeight > 0 && (
+                    <div className={styles.countryNote}>
+                      <span className={styles.countryNoteIcon}>📍</span>
+                      <span className={styles.countryNoteText}>
+                        {t.checkout.countryNote}
+                      </span>
+                    </div>
+                    {totalWeight > 0 && selectedCountry && (
                       <p className={styles.weightInfo}>
-                        {isSpanish ? 'Peso total' : 'Total weight'}: {totalWeight.toFixed(2)} kg
+                        {t.checkout.totalWeight}: {totalWeight.toFixed(2)} kg
                       </p>
                     )}
                   </div>
@@ -343,31 +421,43 @@ export default function CheckoutPage() {
                     </span>
                   </div>
 
-                  <div className={styles.summaryRow}>
-                    <span className={styles.summaryLabel}>
-                      {t.checkout.shipping}
-                    </span>
-                    <span className={styles.summaryValue}>
-                      {shippingCost > 0 ? (
-                        <>
-                          {formatPrice(shippingCost)}
-                          <span className={styles.shippingDays}> ({shippingInfo.estimatedDays})</span>
-                        </>
-                      ) : (
-                        <span className={styles.freeShipping}>
-                          {isSpanish ? 'Envío gratis' : 'Free shipping'}
+                  {selectedCountry && (
+                    <>
+                      <div className={styles.summaryRow}>
+                        <span className={styles.summaryLabel}>
+                          {t.checkout.shipping}
                         </span>
-                      )}
-                    </span>
-                  </div>
+                        <span className={styles.summaryValue}>
+                          {shippingCost > 0 ? (
+                            <>
+                              {formatPrice(shippingCost)}
+                              <span className={styles.shippingDays}> ({shippingInfo?.estimatedDays})</span>
+                            </>
+                          ) : (
+                            <span className={styles.freeShipping}>
+                              {t.checkout.freeShipping}
+                            </span>
+                          )}
+                        </span>
+                      </div>
 
-                  {shippingInfo.freeShippingThreshold && subtotal < shippingInfo.freeShippingThreshold && (
-                    <p className={styles.freeShippingNote}>
-                      {isSpanish 
-                        ? `Añade ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} más para envío gratis`
-                        : `Add ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} more for free shipping`
-                      }
-                    </p>
+                      {hasSubscription && (
+                        <p className={styles.subscriptionShippingNote}>
+                          {isSpanish 
+                            ? 'La suscripción incluye 2 envíos (uno para cada temporada)'
+                            : 'Subscription includes 2 shipments (one for each season)'
+                          }
+                        </p>
+                      )}
+                      {shippingInfo?.freeShippingThreshold && subtotal < shippingInfo.freeShippingThreshold && !hasSubscription && (
+                        <p className={styles.freeShippingNote}>
+                          {isSpanish 
+                            ? `Añade ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} más para envío gratis`
+                            : `Add ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} more for free shipping`
+                          }
+                        </p>
+                      )}
+                    </>
                   )}
 
                   <div className={styles.summaryDivider}></div>
@@ -381,6 +471,41 @@ export default function CheckoutPage() {
                     </span>
                   </div>
 
+                  {/* Season warnings */}
+                  {hasOutOfSeasonBoxes && (
+                    <div className={styles.seasonWarning}>
+                      <span className={styles.warningIcon}>📅</span>
+                      <div className={styles.warningContent}>
+                        <strong>{isSpanish ? 'Preorden - Fuera de temporada' : 'Preorder - Out of season'}</strong>
+                        <p>
+                          {isSpanish 
+                            ? 'Algunas cajas en tu pedido están fuera de temporada. Las enviaremos cuando llegue el momento de la temporada.'
+                            : 'Some boxes in your order are out of season. We will ship them when the season arrives.'}
+                        </p>
+                        {seasonWarnings.filter(w => !w.inSeason).map(w => (
+                          <p key={w.variety} className={styles.seasonDetail}>
+                            {getVarietyDisplayName(w.variety)}: {isSpanish ? 'Temporada' : 'Season'} {w.season}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Multi-shipment warning */}
+                  {hasMultipleVarieties && (
+                    <div className={styles.multiShipmentWarning}>
+                      <span className={styles.warningIcon}>📦</span>
+                      <div className={styles.warningContent}>
+                        <strong>{isSpanish ? 'Múltiples envíos requeridos' : 'Multiple shipments required'}</strong>
+                        <p>
+                          {isSpanish
+                            ? 'Tu pedido contiene ambas variedades (Hass y Lamb Hass) que tienen temporadas diferentes. Necesitaremos hacer 2 envíos separados. Te contactaremos para coordinar los envíos.'
+                            : 'Your order contains both varieties (Hass and Lamb Hass) which have different seasons. We will need to make 2 separate shipments. We will contact you to coordinate the shipments.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {checkoutError && (
                     <div className={styles.checkoutError}>
                       <span className={styles.errorIcon}>⚠️</span>
@@ -391,7 +516,7 @@ export default function CheckoutPage() {
                   <button
                     onClick={handleCompleteCheckout}
                     className={styles.checkoutButton}
-                    disabled={items.length === 0 || isLoading}
+                    disabled={items.length === 0 || isLoading || !selectedCountry}
                   >
                     {isLoading ? t.checkout.processing : t.checkout.completeOrder}
                   </button>

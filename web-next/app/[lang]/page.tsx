@@ -9,7 +9,7 @@ import PorQueAmandi from '@/components/PorQueAmandi'
 import FAQ from '@/components/FAQ'
 import Footer from '@/components/Footer'
 import LanguageSelector from '@/components/LanguageSelector'
-import { es, en, type Translations } from '@/lib/translations'
+import { getTranslations, type Translations } from '@/lib/translations'
 import type { Metadata } from 'next'
 
 const languages = ['es', 'en', 'pt', 'fr', 'de', 'nl', 'da', 'sv', 'fi', 'no']
@@ -51,9 +51,8 @@ export default async function Home({
     notFound()
   }
   
-  // Detect language and use appropriate translations
-  const lang = resolvedParams.lang === 'es' ? 'es' : 'en'
-  const translations: Translations = lang === 'es' ? es : en
+  // Detect language and use appropriate translations (defaults to English if not Spanish)
+  const translations: Translations = getTranslations(resolvedParams.lang)
 
   return (
     <div className="app">

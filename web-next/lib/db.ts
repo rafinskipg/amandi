@@ -1,29 +1,63 @@
-// In-memory database for orders and events
-// In production, this would be replaced with a real database
+// PostgreSQL database using Prisma
+import { prisma } from './prisma'
+import type { OrderStatus, EventType } from '@prisma/client'
 
 export interface Order {
   id: string
+  orderNumber: string
   stripeSessionId: string
   customerEmail?: string
+  customerPhone?: string
   items: OrderItem[]
   total: number
   currency: string
-  status: 'pending' | 'completed' | 'failed'
+  status: 'pending' | 'completed' | 'failed' | 'delivered'
   createdAt: Date
   completedAt?: Date
 }
 
+// Generate a human-readable order number (e.g., AVO123XHFA21)
+function generateOrderNumber(): string {
+  const prefix = 'AVO'
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-6) // Last 6 chars of base36 timestamp
+  const random = Math.random().toString(36).toUpperCase().slice(2, 5) // 3 random chars
+  return `${prefix}${timestamp}${random}`
+}
+
 export interface OrderItem {
+  id: string
   productId: string
   productName: string
   quantity: number
   price: number
   variety?: string
+  shipped?: boolean
+  shippedAt?: Date
+  shipmentId?: string
+}
+
+export interface Shipment {
+  id: string
+  orderId: string
+  trackingNumber?: string
+  carrier?: string
+  shippedAt?: Date
+  createdAt: Date
+  items: OrderItem[]
+}
+
+export interface OrderMessage {
+  id: string
+  orderId: string
+  message: string
+  isIncident: boolean
+  fromCustomer: boolean
+  createdAt: Date
 }
 
 export interface Event {
   id: string
-  type: 'add_to_cart' | 'checkout_started' | 'checkout_completed' | 'checkout_cancelled'
+  type: 'add_to_cart' | 'checkout_started' | 'checkout_completed' | 'checkout_cancelled' | 'chatbot_used'
   productId?: string
   productName?: string
   quantity?: number
@@ -33,81 +67,471 @@ export interface Event {
   metadata?: Record<string, any>
 }
 
-// In-memory storage
-const orders: Order[] = []
-const events: Event[] = []
-
-// Orders API
+// Database API
 export const db = {
   // Orders
-  createOrder: (order: Omit<Order, 'id' | 'createdAt'>): Order => {
-    const newOrder: Order = {
-      ...order,
-      id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date(),
+  createOrder: async (order: Omit<Order, 'id' | 'createdAt' | 'orderNumber'>): Promise<Order> => {
+    // Generate unique order number
+    let orderNumber = generateOrderNumber()
+    let attempts = 0
+    while (attempts < 10) {
+      const existing = await prisma.order.findUnique({ where: { orderNumber } })
+      if (!existing) break
+      orderNumber = generateOrderNumber()
+      attempts++
     }
-    orders.push(newOrder)
-    return newOrder
+
+    const createdOrder = await prisma.order.create({
+      data: {
+        orderNumber,
+        stripeSessionId: order.stripeSessionId,
+        customerEmail: order.customerEmail,
+        customerPhone: order.customerPhone,
+        total: order.total,
+        currency: order.currency,
+        status: order.status as OrderStatus,
+        completedAt: order.completedAt,
+        items: {
+          create: order.items.map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            price: item.price,
+            variety: item.variety,
+          })),
+        },
+      },
+      include: {
+        items: true,
+      },
+    })
+
+      return {
+        id: createdOrder.id,
+        orderNumber: createdOrder.orderNumber,
+        stripeSessionId: createdOrder.stripeSessionId,
+        customerEmail: createdOrder.customerEmail || undefined,
+        customerPhone: createdOrder.customerPhone || undefined,
+        total: createdOrder.total,
+        currency: createdOrder.currency,
+        status: createdOrder.status as Order['status'],
+        createdAt: createdOrder.createdAt,
+        completedAt: createdOrder.completedAt || undefined,
+        items: createdOrder.items.map(item => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          variety: item.variety || undefined,
+          shipped: item.shipped,
+          shippedAt: item.shippedAt || undefined,
+          shipmentId: item.shipmentId || undefined,
+        })),
+      }
   },
 
-  updateOrder: (id: string, updates: Partial<Order>): Order | null => {
-    const index = orders.findIndex(o => o.id === id)
-    if (index === -1) return null
-    
-    orders[index] = { ...orders[index], ...updates }
-    return orders[index]
+  updateOrder: async (id: string, updates: Partial<Order>): Promise<Order | null> => {
+    try {
+      const updatedOrder = await prisma.order.update({
+        where: { id },
+        data: {
+          ...(updates.status && { status: updates.status as OrderStatus }),
+          ...(updates.completedAt !== undefined && { completedAt: updates.completedAt }),
+          ...(updates.customerEmail !== undefined && { customerEmail: updates.customerEmail }),
+        },
+        include: {
+          items: true,
+        },
+      })
+
+      return {
+        id: updatedOrder.id,
+        orderNumber: updatedOrder.orderNumber,
+        stripeSessionId: updatedOrder.stripeSessionId,
+        customerEmail: updatedOrder.customerEmail || undefined,
+        customerPhone: updatedOrder.customerPhone || undefined,
+        total: updatedOrder.total,
+        currency: updatedOrder.currency,
+        status: updatedOrder.status as Order['status'],
+        createdAt: updatedOrder.createdAt,
+        completedAt: updatedOrder.completedAt || undefined,
+        items: updatedOrder.items.map(item => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          variety: item.variety || undefined,
+          shipped: item.shipped,
+          shippedAt: item.shippedAt || undefined,
+          shipmentId: item.shipmentId || undefined,
+        })),
+      }
+    } catch (error) {
+      return null
+    }
   },
 
-  getOrder: (id: string): Order | null => {
-    return orders.find(o => o.id === id) || null
+  getOrder: async (id: string): Promise<Order | null> => {
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id },
+        include: {
+          items: true,
+        },
+      })
+
+      if (!order) return null
+
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        stripeSessionId: order.stripeSessionId,
+        customerEmail: order.customerEmail || undefined,
+        customerPhone: order.customerPhone || undefined,
+        total: order.total,
+        currency: order.currency,
+        status: order.status as Order['status'],
+        createdAt: order.createdAt,
+        completedAt: order.completedAt || undefined,
+        items: order.items.map(item => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          variety: item.variety || undefined,
+          shipped: item.shipped,
+          shippedAt: item.shippedAt || undefined,
+          shipmentId: item.shipmentId || undefined,
+        })),
+      }
+    } catch (error) {
+      return null
+    }
   },
 
-  getOrderBySessionId: (sessionId: string): Order | null => {
-    return orders.find(o => o.stripeSessionId === sessionId) || null
+  getOrderByOrderNumber: async (orderNumber: string): Promise<Order | null> => {
+    try {
+      const order = await prisma.order.findUnique({
+        where: { orderNumber },
+        include: {
+          items: true,
+        },
+      })
+
+      if (!order) return null
+
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        stripeSessionId: order.stripeSessionId,
+        customerEmail: order.customerEmail || undefined,
+        customerPhone: order.customerPhone || undefined,
+        total: order.total,
+        currency: order.currency,
+        status: order.status as Order['status'],
+        createdAt: order.createdAt,
+        completedAt: order.completedAt || undefined,
+        items: order.items.map(item => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          variety: item.variety || undefined,
+          shipped: item.shipped,
+          shippedAt: item.shippedAt || undefined,
+          shipmentId: item.shipmentId || undefined,
+        })),
+      }
+    } catch (error) {
+      return null
+    }
   },
 
-  getAllOrders: (): Order[] => {
-    return [...orders].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+  getOrderBySessionId: async (sessionId: string): Promise<Order | null> => {
+    try {
+      const order = await prisma.order.findUnique({
+        where: { stripeSessionId: sessionId },
+        include: {
+          items: true,
+        },
+      })
+
+      if (!order) return null
+
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        stripeSessionId: order.stripeSessionId,
+        customerEmail: order.customerEmail || undefined,
+        customerPhone: order.customerPhone || undefined,
+        total: order.total,
+        currency: order.currency,
+        status: order.status as Order['status'],
+        createdAt: order.createdAt,
+        completedAt: order.completedAt || undefined,
+        items: order.items.map(item => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          variety: item.variety || undefined,
+          shipped: item.shipped,
+          shippedAt: item.shippedAt || undefined,
+          shipmentId: item.shipmentId || undefined,
+        })),
+      }
+    } catch (error) {
+      return null
+    }
   },
 
-  getCompletedOrders: (): Order[] => {
-    return orders
-      .filter(o => o.status === 'completed')
-      .sort((a, b) => (b.completedAt?.getTime() || 0) - (a.completedAt?.getTime() || 0))
+  getAllOrders: async (): Promise<Order[]> => {
+    const orders = await prisma.order.findMany({
+      include: {
+        items: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
+
+    return orders.map(order => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      stripeSessionId: order.stripeSessionId,
+      customerEmail: order.customerEmail || undefined,
+      customerPhone: order.customerPhone || undefined,
+      total: order.total,
+      currency: order.currency,
+      status: order.status as Order['status'],
+      createdAt: order.createdAt,
+      completedAt: order.completedAt || undefined,
+      items: order.items.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+        variety: item.variety || undefined,
+        shipped: item.shipped,
+        shippedAt: item.shippedAt || undefined,
+        shipmentId: item.shipmentId || undefined,
+      })),
+    }))
+  },
+
+  getCompletedOrders: async (): Promise<Order[]> => {
+    const orders = await prisma.order.findMany({
+      where: {
+        status: 'completed',
+      },
+      include: {
+        items: true,
+      },
+      orderBy: {
+        completedAt: 'desc',
+      },
+    })
+
+    return orders.map(order => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      stripeSessionId: order.stripeSessionId,
+      customerEmail: order.customerEmail || undefined,
+      customerPhone: order.customerPhone || undefined,
+      total: order.total,
+      currency: order.currency,
+      status: order.status as Order['status'],
+      createdAt: order.createdAt,
+      completedAt: order.completedAt || undefined,
+      items: order.items.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+        variety: item.variety || undefined,
+        shipped: item.shipped,
+        shippedAt: item.shippedAt || undefined,
+        shipmentId: item.shipmentId || undefined,
+      })),
+    }))
+  },
+
+  // Get orders with pagination, search, and sorting
+  getOrdersPaginated: async (options: {
+    page?: number
+    limit?: number
+    search?: string
+    status?: Order['status']
+    sortBy?: 'createdAt' | 'total' | 'status'
+    sortOrder?: 'asc' | 'desc'
+  }): Promise<{ orders: Order[]; total: number; page: number; totalPages: number }> => {
+    const page = options.page || 1
+    const limit = options.limit || 20
+    const skip = (page - 1) * limit
+    const search = options.search?.toLowerCase().trim()
+    const status = options.status
+    const sortBy = options.sortBy || 'createdAt'
+    const sortOrder = options.sortOrder || 'desc'
+
+    // Build where clause
+    const where: any = {}
+    if (status) {
+      where.status = status
+    }
+    if (search) {
+      where.OR = [
+        { orderNumber: { contains: search, mode: 'insensitive' } },
+        { customerEmail: { contains: search, mode: 'insensitive' } },
+        { customerPhone: { contains: search, mode: 'insensitive' } },
+        { stripeSessionId: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+
+    // Build orderBy
+    const orderBy: any = {}
+    if (sortBy === 'createdAt') {
+      orderBy.createdAt = sortOrder
+    } else if (sortBy === 'total') {
+      orderBy.total = sortOrder
+    } else if (sortBy === 'status') {
+      orderBy.status = sortOrder
+    }
+
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        include: {
+          items: true,
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.order.count({ where }),
+    ])
+
+    return {
+      orders: orders.map(order => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        stripeSessionId: order.stripeSessionId,
+        customerEmail: order.customerEmail || undefined,
+        customerPhone: order.customerPhone || undefined,
+        total: order.total,
+        currency: order.currency,
+        status: order.status as Order['status'],
+        createdAt: order.createdAt,
+        completedAt: order.completedAt || undefined,
+        items: order.items.map(item => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          variety: item.variety || undefined,
+          shipped: item.shipped,
+          shippedAt: item.shippedAt || undefined,
+          shipmentId: item.shipmentId || undefined,
+        })),
+      })),
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    }
   },
 
   // Events
-  createEvent: (event: Omit<Event, 'id' | 'timestamp'>): Event => {
-    const newEvent: Event = {
-      ...event,
-      id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: new Date(),
+  createEvent: async (event: Omit<Event, 'id' | 'timestamp'>): Promise<Event> => {
+    const createdEvent = await prisma.event.create({
+      data: {
+        type: event.type as EventType,
+        productId: event.productId,
+        productName: event.productName,
+        quantity: event.quantity,
+        variety: event.variety,
+        sessionId: event.sessionId,
+        metadata: event.metadata || {},
+      },
+    })
+
+    return {
+      id: createdEvent.id,
+      type: createdEvent.type as Event['type'],
+      productId: createdEvent.productId || undefined,
+      productName: createdEvent.productName || undefined,
+      quantity: createdEvent.quantity || undefined,
+      variety: createdEvent.variety || undefined,
+      sessionId: createdEvent.sessionId || undefined,
+      timestamp: createdEvent.timestamp,
+      metadata: createdEvent.metadata as Record<string, any> | undefined,
     }
-    events.push(newEvent)
-    return newEvent
   },
 
-  getAllEvents: (): Event[] => {
-    return [...events].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+  getAllEvents: async (): Promise<Event[]> => {
+    const events = await prisma.event.findMany({
+      orderBy: {
+        timestamp: 'desc',
+      },
+    })
+
+    return events.map(event => ({
+      id: event.id,
+      type: event.type as Event['type'],
+      productId: event.productId || undefined,
+      productName: event.productName || undefined,
+      quantity: event.quantity || undefined,
+      variety: event.variety || undefined,
+      sessionId: event.sessionId || undefined,
+      timestamp: event.timestamp,
+      metadata: event.metadata as Record<string, any> | undefined,
+    }))
   },
 
-  getEventsByType: (type: Event['type']): Event[] => {
-    return events
-      .filter(e => e.type === type)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+  getEventsByType: async (type: Event['type']): Promise<Event[]> => {
+    const events = await prisma.event.findMany({
+      where: {
+        type: type as EventType,
+      },
+      orderBy: {
+        timestamp: 'desc',
+      },
+    })
+
+    return events.map(event => ({
+      id: event.id,
+      type: event.type as Event['type'],
+      productId: event.productId || undefined,
+      productName: event.productName || undefined,
+      quantity: event.quantity || undefined,
+      variety: event.variety || undefined,
+      sessionId: event.sessionId || undefined,
+      timestamp: event.timestamp,
+      metadata: event.metadata as Record<string, any> | undefined,
+    }))
   },
 
   // Metrics
-  getMetrics: () => {
-    const addToCartEvents = events.filter(e => e.type === 'add_to_cart')
-    const checkoutStarted = events.filter(e => e.type === 'checkout_started').length
-    const checkoutCompleted = events.filter(e => e.type === 'checkout_completed').length
-    const checkoutCancelled = events.filter(e => e.type === 'checkout_cancelled').length
-    
-    const totalRevenue = orders
-      .filter(o => o.status === 'completed')
-      .reduce((sum, o) => sum + o.total, 0)
-    
+  getMetrics: async () => {
+    const [allEvents, allOrders, addToCartEvents, checkoutStarted, checkoutCompleted, checkoutCancelled, chatbotUsed, completedOrders] = await Promise.all([
+      prisma.event.findMany(),
+      prisma.order.findMany(),
+      prisma.event.findMany({ where: { type: 'add_to_cart' } }),
+      prisma.event.count({ where: { type: 'checkout_started' } }),
+      prisma.event.count({ where: { type: 'checkout_completed' } }),
+      prisma.event.count({ where: { type: 'checkout_cancelled' } }),
+      prisma.event.count({ where: { type: 'chatbot_used' } }),
+      prisma.order.findMany({ where: { status: 'completed' } }),
+    ])
+
+    const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0)
+
     const productStats = addToCartEvents.reduce((acc, event) => {
       if (event.productId) {
         if (!acc[event.productId]) {
@@ -125,18 +549,148 @@ export const db = {
     }, {} as Record<string, { productId: string; productName: string; addToCartCount: number; totalQuantity: number }>)
 
     return {
-      totalOrders: orders.length,
-      completedOrders: orders.filter(o => o.status === 'completed').length,
+      totalOrders: allOrders.length,
+      completedOrders: completedOrders.length,
       totalRevenue,
       addToCartCount: addToCartEvents.length,
       checkoutStarted,
       checkoutCompleted,
       checkoutCancelled,
+      chatbotUsed,
       conversionRate: checkoutStarted > 0 
         ? (checkoutCompleted / checkoutStarted) * 100 
         : 0,
       productStats: Object.values(productStats),
     }
   },
-}
 
+  // Shipments
+  createShipment: async (orderId: string, trackingNumber?: string, carrier?: string, itemIds?: string[]): Promise<Shipment> => {
+    const shipment = await prisma.shipment.create({
+      data: {
+        orderId,
+        trackingNumber,
+        carrier,
+        shippedAt: new Date(),
+      },
+    })
+
+    // Mark items as shipped and link to shipment
+    if (itemIds && itemIds.length > 0) {
+      await prisma.orderItem.updateMany({
+        where: {
+          id: { in: itemIds },
+          orderId,
+        },
+        data: {
+          shipped: true,
+          shippedAt: new Date(),
+          shipmentId: shipment.id,
+        },
+      })
+    }
+
+    // Fetch shipment with items
+    const shipmentWithItems = await prisma.shipment.findUnique({
+      where: { id: shipment.id },
+      include: {
+        items: true,
+      },
+    })
+
+    if (!shipmentWithItems) {
+      throw new Error('Failed to create shipment')
+    }
+
+    return {
+      id: shipmentWithItems.id,
+      orderId: shipmentWithItems.orderId,
+      trackingNumber: shipmentWithItems.trackingNumber || undefined,
+      carrier: shipmentWithItems.carrier || undefined,
+      shippedAt: shipmentWithItems.shippedAt || undefined,
+      createdAt: shipmentWithItems.createdAt,
+      items: shipmentWithItems.items.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+        variety: item.variety || undefined,
+        shipped: item.shipped,
+        shippedAt: item.shippedAt || undefined,
+        shipmentId: item.shipmentId || undefined,
+      })),
+    }
+  },
+
+  getShipmentsByOrderId: async (orderId: string): Promise<Shipment[]> => {
+    const shipments = await prisma.shipment.findMany({
+      where: { orderId },
+      include: {
+        items: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
+
+    return shipments.map(shipment => ({
+      id: shipment.id,
+      orderId: shipment.orderId,
+      trackingNumber: shipment.trackingNumber || undefined,
+      carrier: shipment.carrier || undefined,
+      shippedAt: shipment.shippedAt || undefined,
+      createdAt: shipment.createdAt,
+      items: shipment.items.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+        variety: item.variety || undefined,
+        shipped: item.shipped,
+        shippedAt: item.shippedAt || undefined,
+        shipmentId: item.shipmentId || undefined,
+      })),
+    }))
+  },
+
+  // Order Messages
+  createOrderMessage: async (orderId: string, message: string, isIncident: boolean = false, fromCustomer: boolean = true): Promise<OrderMessage> => {
+    const orderMessage = await prisma.orderMessage.create({
+      data: {
+        orderId,
+        message,
+        isIncident,
+        fromCustomer,
+      },
+    })
+
+    return {
+      id: orderMessage.id,
+      orderId: orderMessage.orderId,
+      message: orderMessage.message,
+      isIncident: orderMessage.isIncident,
+      fromCustomer: orderMessage.fromCustomer,
+      createdAt: orderMessage.createdAt,
+    }
+  },
+
+  getOrderMessages: async (orderId: string): Promise<OrderMessage[]> => {
+    const messages = await prisma.orderMessage.findMany({
+      where: { orderId },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    })
+
+    return messages.map(msg => ({
+      id: msg.id,
+      orderId: msg.orderId,
+      message: msg.message,
+      isIncident: msg.isIncident,
+      fromCustomer: msg.fromCustomer,
+      createdAt: msg.createdAt,
+    }))
+  },
+}

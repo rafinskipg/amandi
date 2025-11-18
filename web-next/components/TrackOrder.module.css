@@ -1,0 +1,406 @@
+.section {
+  padding: 4rem 0;
+  min-height: 60vh;
+}
+
+.title {
+  font-family: var(--amandi-font-display);
+  font-size: 2.5rem;
+  color: var(--amandi-green-deep);
+  text-align: center;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--amandi-text-muted);
+  font-size: 1.1rem;
+  margin-bottom: 3rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.searchForm {
+  max-width: 600px;
+  margin: 0 auto 3rem;
+}
+
+.searchBox {
+  display: flex;
+  gap: 1rem;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  border: 2px solid var(--amandi-border-soft);
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--amandi-green);
+}
+
+.searchInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.searchButton {
+  padding: 1rem 2rem;
+  background: var(--amandi-green);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.searchButton:hover:not(:disabled) {
+  background: var(--amandi-green-deep);
+}
+
+.searchButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error {
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  padding: 1rem 1.5rem;
+  background: #fee2e2;
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+  color: #991b1b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.errorIcon {
+  font-size: 1.2rem;
+}
+
+.orderDetails {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.orderHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid var(--amandi-border-soft);
+}
+
+.orderNumberLabel {
+  font-size: 0.9rem;
+  color: var(--amandi-text-muted);
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.orderNumber {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--amandi-green-deep);
+  font-family: var(--amandi-font-display);
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.statusBadge {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-transform: capitalize;
+  font-size: 0.9rem;
+}
+
+.orderInfo {
+  margin-bottom: 2rem;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--amandi-border-soft);
+}
+
+.infoRow:last-child {
+  border-bottom: none;
+}
+
+.infoLabel {
+  color: var(--amandi-text-muted);
+  font-weight: 600;
+}
+
+.infoValue {
+  color: var(--amandi-green-deep);
+  font-weight: 600;
+}
+
+.itemsSection {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--amandi-border-soft);
+}
+
+.itemsTitle {
+  font-size: 1.3rem;
+  color: var(--amandi-green-deep);
+  margin: 0 0 1.5rem 0;
+  font-weight: 700;
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem;
+  background: var(--amandi-cream-soft);
+  border-radius: 8px;
+}
+
+.itemName {
+  font-weight: 600;
+  color: var(--amandi-text);
+  flex: 1;
+}
+
+.itemDetails {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.itemQuantity {
+  font-size: 0.9rem;
+  color: var(--amandi-text-muted);
+}
+
+.itemTotal {
+  font-weight: 700;
+  color: var(--amandi-green-deep);
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 2rem;
+  }
+
+  .searchBox {
+    flex-direction: column;
+  }
+
+  .orderHeader {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .orderNumber {
+    font-size: 1.5rem;
+  }
+
+  .item {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .itemDetails {
+    align-items: flex-start;
+  }
+}
+
+.shipmentsSection {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--amandi-border-soft);
+}
+
+.sectionTitle {
+  font-size: 1.3rem;
+  color: var(--amandi-green-deep);
+  margin: 0 0 1rem 0;
+  font-weight: 700;
+}
+
+.shipmentCard {
+  padding: 1rem;
+  background: var(--amandi-cream-soft);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid var(--amandi-green);
+}
+
+.shipmentCard p {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.trackingInfo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--amandi-green-deep);
+}
+
+.messagesSection {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--amandi-border-soft);
+}
+
+.messagesList {
+  margin-bottom: 1.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.messageCard {
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid #3b82f6;
+}
+
+.incidentCard {
+  border-left-color: #ef4444;
+  background: #fef2f2;
+}
+
+.messageHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.messageFrom {
+  font-weight: 600;
+  color: var(--amandi-green-deep);
+}
+
+.incidentBadge {
+  padding: 0.25rem 0.5rem;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.messageDate {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--amandi-text-muted);
+}
+
+.messageText {
+  margin: 0;
+  color: var(--amandi-text);
+  line-height: 1.5;
+}
+
+.messageForm {
+  margin-top: 1rem;
+}
+
+.messageTextarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--amandi-border-soft);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 0.75rem;
+  transition: border-color 0.2s;
+}
+
+.messageTextarea:focus {
+  outline: none;
+  border-color: var(--amandi-green);
+}
+
+.messageOptions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.incidentCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--amandi-text);
+}
+
+.incidentCheckbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.sendButton {
+  padding: 0.75rem 2rem;
+  background: var(--amandi-green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sendButton:hover:not(:disabled) {
+  background: var(--amandi-green-deep);
+}
+
+.sendButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.chatbotSection {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--amandi-border-soft);
+}
+

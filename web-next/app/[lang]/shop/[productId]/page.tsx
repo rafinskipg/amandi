@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import ProductDetail from '@/components/ProductDetail'
 import { getProductById, products } from '@/lib/products'
-import { es, en, type Translations } from '@/lib/translations'
+import { getTranslations, es, type Translations } from '@/lib/translations'
 import type { Metadata } from 'next'
 
 const languages = ['es', 'en', 'pt', 'fr', 'de', 'nl', 'da', 'sv', 'fi', 'no']
@@ -36,7 +36,9 @@ export async function generateMetadata({
     }
   }
 
-  const lang = resolvedParams.lang === 'es' ? 'es' : 'en'
+  // Use getTranslations to determine if Spanish, otherwise default to English
+  const translations = getTranslations(resolvedParams.lang)
+  const lang = translations === es ? 'es' : 'en'
   const title = product.title[lang] || product.title.en
   const description = product.description[lang] || product.description.en
 
@@ -64,9 +66,8 @@ export default async function ProductPage({
     notFound()
   }
 
-  // Detect language and use appropriate translations
-  const lang = resolvedParams.lang === 'es' ? 'es' : 'en'
-  const translations: Translations = lang === 'es' ? es : en
+  // Detect language and use appropriate translations (defaults to English if not Spanish)
+  const translations: Translations = getTranslations(resolvedParams.lang)
 
   return (
     <div className="app">

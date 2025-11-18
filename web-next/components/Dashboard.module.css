@@ -240,6 +240,12 @@
   margin: 0;
 }
 
+.orderPhone {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0.25rem 0 0 0;
+}
+
 .orderTotal {
   font-size: 1.5rem;
   font-weight: 700;
@@ -256,12 +262,36 @@
 .orderItem {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 0.5rem 0;
   font-size: 0.95rem;
 }
 
+.itemCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
 .itemName {
   color: #333;
+}
+
+.shippedBadge {
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  background: #10b981;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .itemDetails {
@@ -288,6 +318,370 @@
   border-radius: 12px;
   font-weight: 600;
   text-transform: capitalize;
+}
+
+.ordersHeader {
+  margin-bottom: 2rem;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.searchBox {
+  display: flex;
+  flex: 1;
+  min-width: 300px;
+  gap: 0.5rem;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--amandi-green);
+}
+
+.searchButton {
+  padding: 0.75rem 1.5rem;
+  background: var(--amandi-green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.searchButton:hover {
+  background: var(--amandi-green-deep);
+}
+
+.filterSelect {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--amandi-green);
+}
+
+.orderStatusControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.expandButton {
+  padding: 0.5rem 1rem;
+  background: #fff;
+  color: var(--amandi-green-deep);
+  border: 2px solid var(--amandi-green);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.expandButton:hover {
+  background: var(--amandi-green);
+  color: #fff;
+}
+
+.orderDetails {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e0e0e0;
+}
+
+.shipmentSection,
+.shipmentsSection,
+.messagesSection {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.shipmentSection h4,
+.shipmentsSection h4,
+.messagesSection h4 {
+  margin: 0 0 1rem 0;
+  color: var(--amandi-green-deep);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.itemsToShip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.itemCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.itemCheckboxLabel:hover {
+  background: #f5f5f5;
+}
+
+.allShipped {
+  color: #10b981;
+  font-weight: 600;
+  font-style: italic;
+  margin: 0.5rem 0;
+}
+
+.shipmentForm {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.trackingInput,
+.carrierInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.trackingInput:focus,
+.carrierInput:focus {
+  outline: none;
+  border-color: var(--amandi-green);
+}
+
+.createShipmentButton {
+  padding: 0.75rem 1.5rem;
+  background: var(--amandi-green);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.createShipmentButton:hover:not(:disabled) {
+  background: var(--amandi-green-deep);
+}
+
+.createShipmentButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shipmentCard {
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid var(--amandi-green);
+}
+
+.shipmentInfo p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.messagesList {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.messageCard {
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid #3b82f6;
+}
+
+.incidentCard {
+  border-left-color: #ef4444;
+  background: #fef2f2;
+}
+
+.messageHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.messageFrom {
+  font-weight: 600;
+  color: var(--amandi-green-deep);
+}
+
+.incidentBadge {
+  padding: 0.2rem 0.5rem;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.messageDate {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.messageText {
+  margin: 0;
+  color: #333;
+  line-height: 1.5;
+}
+
+.newMessageForm {
+  margin-top: 1rem;
+}
+
+.messageTextarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 0.75rem;
+}
+
+.messageTextarea:focus {
+  outline: none;
+  border-color: var(--amandi-green);
+}
+
+.messageButtons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.sendMessageButton,
+.reportIncidentButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sendMessageButton {
+  background: var(--amandi-green);
+  color: #fff;
+}
+
+.sendMessageButton:hover:not(:disabled) {
+  background: var(--amandi-green-deep);
+}
+
+.reportIncidentButton {
+  background: #ef4444;
+  color: #fff;
+}
+
+.reportIncidentButton:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.sendMessageButton:disabled,
+.reportIncidentButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.statusButton {
+  padding: 0.5rem 1rem;
+  background: var(--amandi-green);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.statusButton:hover:not(:disabled) {
+  background: var(--amandi-green-deep);
+}
+
+.statusButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e0e0e0;
+}
+
+.paginationButton {
+  padding: 0.75rem 1.5rem;
+  background: #fff;
+  color: var(--amandi-green-deep);
+  border: 2px solid var(--amandi-green);
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.paginationButton:hover:not(:disabled) {
+  background: var(--amandi-green);
+  color: #fff;
+}
+
+.paginationButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.paginationInfo {
+  font-size: 0.9rem;
+  color: #666;
 }
 
 @media (max-width: 768px) {

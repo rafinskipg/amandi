@@ -64,6 +64,15 @@ export default function Footer({ translations, country }: FooterProps) {
             </div>
           )}
 
+          <div className={styles.footerLinks}>
+            <h4 className={styles.footerLinksTitle}>
+              {translations.footer.information}
+            </h4>
+            <Link href={`/${currentLang}/track`}>
+              {translations.footer.trackOrder}
+            </Link>
+          </div>
+
           <div className={styles.footerLegal}>
             <Link href="#">{t.links.privacy}</Link>
             <Link href="#">{t.links.shipping}</Link>

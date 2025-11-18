@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { es, en, type Translations } from '@/lib/translations'
+import { getTranslations, es, type Translations } from '@/lib/translations'
 import { buildShopRoute, buildCheckoutRoute } from '@/lib/routes'
 import LanguageSelector from './LanguageSelector'
 import styles from './CheckoutCancel.module.css'
@@ -18,13 +18,13 @@ export default function CheckoutCancel({ params }: CheckoutCancelProps = {}) {
 
   useEffect(() => {
     // Detect language from pathname
-    const langMatch = pathname.match(/^\/(en|es)/)
-    const detectedLang = (langMatch ? langMatch[1] : 'es') as 'es' | 'en'
-    setLang(detectedLang)
+    const langMatch = pathname.match(/^\/([a-z]{2})/)
+    const detectedLang = langMatch ? langMatch[1] : 'en'
+    setLang(detectedLang as 'es' | 'en')
   }, [pathname])
 
-  const isSpanish = lang === 'es'
-  const t: Translations = isSpanish ? es : en
+  const t: Translations = getTranslations(lang)
+  const isSpanish = t === es
 
   return (
     <>

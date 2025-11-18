@@ -237,14 +237,27 @@ export const es = {
         errors: {
             required: "Este campo es obligatorio",
             invalidAddress: "Por favor completa todos los campos obligatorios de la dirección de envío.",
-            checkoutFailed: "Error al procesar el pago"
-        }
+            checkoutFailed: "Error al procesar el pago",
+            selectCountry: "Por favor selecciona un país para continuar"
+        },
+        surprise: {
+            title: "Una pequeña sorpresa",
+            description: "Nuestro equipo siempre añade algo bonito para ti"
+        },
+        selectCountryPlaceholder: "-- Selecciona un país --",
+        countryNote: "Selecciona tu país para calcular los gastos de envío",
+        totalWeight: "Peso total",
+        freeShipping: "Envío gratis"
     },
     checkoutSuccess: {
         title: "¡Pedido completado!",
         message: "Gracias por tu pedido. Te enviaremos un correo de confirmación con los detalles de tu compra.",
         sessionId: "ID de sesión",
-        continueShopping: "Seguir comprando"
+        continueShopping: "Seguir comprando",
+        loadingOrder: "Cargando información del pedido...",
+        yourOrderNumber: "Tu número de pedido es",
+        status: "Estado",
+        trackOrder: "Rastrear mi pedido"
     },
     checkoutCancel: {
         title: "Pago cancelado",
@@ -258,6 +271,31 @@ export const es = {
         links: {
             privacy: "Política de privacidad",
             shipping: "Envíos a Europa"
+        },
+        information: "Información",
+        trackOrder: "Rastrear mi pedido"
+    },
+    trackOrder: {
+        title: "Rastrear mi pedido",
+        subtitle: "Ingresa tu número de pedido para ver el estado y los detalles de tu orden.",
+        placeholder: "Ej: AVO123XHFA21",
+        search: "Buscar",
+        searching: "Buscando...",
+        orderNumber: "Número de pedido",
+        orderDate: "Fecha de pedido",
+        completedDate: "Fecha de completado",
+        total: "Total",
+        products: "Productos",
+        errors: {
+            enterOrderNumber: "Por favor ingresa un número de pedido",
+            orderNotFound: "Pedido no encontrado",
+            searchError: "Error al buscar el pedido"
+        },
+        status: {
+            pending: "Pendiente",
+            completed: "Completado",
+            delivered: "Entregado",
+            failed: "Fallido"
         }
     }
 }
@@ -501,14 +539,27 @@ export const en = {
         errors: {
             required: "This field is required",
             invalidAddress: "Please fill in all required shipping address fields.",
-            checkoutFailed: "Payment processing error"
-        }
+            checkoutFailed: "Payment processing error",
+            selectCountry: "Please select a country to continue"
+        },
+        surprise: {
+            title: "A little surprise",
+            description: "Our team always adds something nice for you"
+        },
+        selectCountryPlaceholder: "-- Select a country --",
+        countryNote: "Select your country to calculate shipping costs",
+        totalWeight: "Total weight",
+        freeShipping: "Free shipping"
     },
     checkoutSuccess: {
         title: "Order completed!",
         message: "Thank you for your order. We will send you a confirmation email with your purchase details.",
         sessionId: "Session ID",
-        continueShopping: "Continue shopping"
+        continueShopping: "Continue shopping",
+        loadingOrder: "Loading order information...",
+        yourOrderNumber: "Your order number is",
+        status: "Status",
+        trackOrder: "Track my order"
     },
     checkoutCancel: {
         title: "Payment cancelled",
@@ -522,9 +573,45 @@ export const en = {
         links: {
             privacy: "Privacy policy",
             shipping: "Shipping to Europe"
+        },
+        information: "Information",
+        trackOrder: "Track my order"
+    },
+    trackOrder: {
+        title: "Track my order",
+        subtitle: "Enter your order number to view the status and details of your order.",
+        placeholder: "E.g: AVO123XHFA21",
+        search: "Search",
+        searching: "Searching...",
+        orderNumber: "Order Number",
+        orderDate: "Order Date",
+        completedDate: "Completed Date",
+        total: "Total",
+        products: "Products",
+        errors: {
+            enterOrderNumber: "Please enter an order number",
+            orderNotFound: "Order not found",
+            searchError: "Error searching for order"
+        },
+        status: {
+            pending: "Pending",
+            completed: "Completed",
+            delivered: "Delivered",
+            failed: "Failed"
         }
     }
 }
 
 export type Translations = typeof es | typeof en
+
+/**
+ * Get translations for a given language code.
+ * If the language is not 'es' (Spanish), defaults to English.
+ * @param lang - Language code (e.g., 'es', 'en', 'pt', 'fr', etc.)
+ * @returns Translations object (either Spanish or English)
+ */
+export function getTranslations(lang?: string | null): Translations {
+    // Only Spanish is supported, all other languages default to English
+    return lang === 'es' ? es : en
+}
 

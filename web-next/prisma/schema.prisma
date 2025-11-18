@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id              String         @id @default(uuid())
+  orderNumber     String         @unique
+  stripeSessionId String         @unique
+  customerEmail   String?
+  customerPhone   String?
+  total           Float
+  currency        String         @default("EUR")
+  status          OrderStatus    @default(pending)
+  createdAt       DateTime       @default(now())
+  completedAt     DateTime?
+  items           OrderItem[]
+  shipments       Shipment[]
+  messages        OrderMessage[]
+  
+  @@index([status])
+  @@index([createdAt])
+  @@index([customerEmail])
+  @@index([orderNumber])
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  productName String
+  quantity    Int
+  price       Float
+  variety     String?
+  shipped     Boolean  @default(false)
+  shippedAt   DateTime?
+  shipmentId  String?
+  shipment    Shipment? @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+  
+  @@index([orderId])
+  @@index([shipmentId])
+}
+
+model Shipment {
+  id            String      @id @default(uuid())
+  orderId       String
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  trackingNumber String?
+  carrier       String?
+  shippedAt     DateTime?
+  items         OrderItem[]
+  createdAt     DateTime    @default(now())
+  
+  @@index([orderId])
+}
+
+model OrderMessage {
+  id          String      @id @default(uuid())
+  orderId     String
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  message     String
+  isIncident  Boolean     @default(false)
+  fromCustomer Boolean    @default(true)
+  createdAt   DateTime    @default(now())
+  
+  @@index([orderId])
+  @@index([createdAt])
+}
+
+model Event {
+  id          String      @id @default(uuid())
+  type        EventType
+  productId   String?
+  productName String?
+  quantity    Int?
+  variety     String?
+  sessionId   String?
+  timestamp   DateTime    @default(now())
+  metadata    Json?
+  
+  @@index([type])
+  @@index([timestamp])
+  @@index([productId])
+}
+
+enum OrderStatus {
+  pending
+  completed
+  failed
+  delivered
+}
+
+enum EventType {
+  add_to_cart
+  checkout_started
+  checkout_completed
+  checkout_cancelled
+  chatbot_used
+}

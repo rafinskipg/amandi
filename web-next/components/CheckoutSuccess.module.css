@@ -59,6 +59,10 @@
 
 .actions {
   margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
 }
 
 .shopButton {
@@ -79,5 +83,73 @@
   background: var(--amandi-green-deep);
   transform: translateY(-2px);
   box-shadow: var(--amandi-shadow);
+}
+
+.trackButton {
+  display: inline-block;
+  padding: 0.875rem 2rem;
+  background: transparent;
+  color: var(--amandi-green-deep);
+  border: 2px solid var(--amandi-green-deep);
+  border-radius: var(--amandi-radius-pill);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.trackButton:hover {
+  background: var(--amandi-green-deep);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.loadingText {
+  color: var(--amandi-text-muted);
+  font-style: italic;
+  margin-top: 1rem;
+}
+
+.orderInfo {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--amandi-cream-soft);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.orderNumberLabel {
+  font-size: 0.9rem;
+  color: var(--amandi-text-muted);
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.orderNumber {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--amandi-green-deep);
+  font-family: var(--amandi-font-display);
+  letter-spacing: 0.1em;
+  margin: 0.5rem 0;
+}
+
+.orderStatus {
+  margin-top: 1rem;
+  color: var(--amandi-text);
+  font-weight: 600;
+}
+
+.statusValue {
+  text-transform: capitalize;
+  color: var(--amandi-green-deep);
+}
+
+.chatbotSection {
+  margin-top: 3rem;
+  padding-top: 3rem;
+  border-top: 2px solid var(--amandi-border-soft);
 }
 

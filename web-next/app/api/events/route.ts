@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const event = db.createEvent({
+    const event = await db.createEvent({
       type,
       productId,
       productName,
@@ -48,11 +48,11 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type')
 
     if (type) {
-      const events = db.getEventsByType(type as any)
+      const events = await db.getEventsByType(type as any)
       return NextResponse.json({ events })
     }
 
-    const events = db.getAllEvents()
+    const events = await db.getAllEvents()
     return NextResponse.json({ events })
   } catch (error: any) {
     console.error('Error fetching events:', error)
