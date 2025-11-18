@@ -142,6 +142,52 @@ export const db = {
           ...(updates.status && { status: updates.status as OrderStatus }),
           ...(updates.completedAt !== undefined && { completedAt: updates.completedAt }),
           ...(updates.customerEmail !== undefined && { customerEmail: updates.customerEmail }),
+          ...(updates.customerPhone !== undefined && { customerPhone: updates.customerPhone }),
+          ...(updates.stripeSessionId !== undefined && { stripeSessionId: updates.stripeSessionId }),
+        },
+        include: {
+          items: true,
+        },
+      })
+
+      return {
+        id: updatedOrder.id,
+        orderNumber: updatedOrder.orderNumber,
+        stripeSessionId: updatedOrder.stripeSessionId,
+        customerEmail: updatedOrder.customerEmail || undefined,
+        customerPhone: updatedOrder.customerPhone || undefined,
+        total: updatedOrder.total,
+        currency: updatedOrder.currency,
+        status: updatedOrder.status as Order['status'],
+        createdAt: updatedOrder.createdAt,
+        completedAt: updatedOrder.completedAt || undefined,
+        items: updatedOrder.items.map(item => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          variety: item.variety || undefined,
+          shipped: item.shipped,
+          shippedAt: item.shippedAt || undefined,
+          shipmentId: item.shipmentId || undefined,
+        })),
+      }
+    } catch (error) {
+      return null
+    }
+  },
+
+  // Update order by stripeSessionId (for race condition handling)
+  updateOrderBySessionId: async (sessionId: string, updates: Partial<Order>): Promise<Order | null> => {
+    try {
+      const updatedOrder = await prisma.order.update({
+        where: { stripeSessionId: sessionId },
+        data: {
+          ...(updates.status && { status: updates.status as OrderStatus }),
+          ...(updates.completedAt !== undefined && { completedAt: updates.completedAt }),
+          ...(updates.customerEmail !== undefined && { customerEmail: updates.customerEmail }),
+          ...(updates.customerPhone !== undefined && { customerPhone: updates.customerPhone }),
         },
         include: {
           items: true,
@@ -258,6 +304,46 @@ export const db = {
     try {
       const order = await prisma.order.findUnique({
         where: { stripeSessionId: sessionId },
+        include: {
+          items: true,
+        },
+      })
+
+      if (!order) return null
+
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        stripeSessionId: order.stripeSessionId,
+        customerEmail: order.customerEmail || undefined,
+        customerPhone: order.customerPhone || undefined,
+        total: order.total,
+        currency: order.currency,
+        status: order.status as Order['status'],
+        createdAt: order.createdAt,
+        completedAt: order.completedAt || undefined,
+        items: order.items.map(item => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          variety: item.variety || undefined,
+          shipped: item.shipped,
+          shippedAt: item.shippedAt || undefined,
+          shipmentId: item.shipmentId || undefined,
+        })),
+      }
+    } catch (error) {
+      return null
+    }
+  },
+
+  // Get order by ID (for client_reference_id lookup)
+  getOrderById: async (orderId: string): Promise<Order | null> => {
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
         include: {
           items: true,
         },

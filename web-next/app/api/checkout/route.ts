@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getProductById } from '@/lib/products'
 import { isVarietyInSeason } from '@/lib/varieties'
+import { db } from '@/lib/db'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-10-29.clover',
@@ -119,8 +120,45 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Create Stripe Checkout Session
+    // Calculate total
+    const subtotal = items.reduce((sum: number, item: any) => {
+      const product = getProductById(item.productId)
+      return sum + (product?.price || 0) * item.quantity
+    }, 0)
+    const total = subtotal + (shippingCost || 0)
+
+    // Create order FIRST (status: pending) before creating Stripe session
+    // This ensures we have an orderId to pass to Stripe
+    const orderItems = items.map((item: any) => {
+      const product = getProductById(item.productId)
+      const productTitle = product?.title?.[validLocale] || product?.title?.en || 'Product'
+      return {
+        productId: item.productId,
+        productName: productTitle,
+        quantity: item.quantity,
+        price: product?.price || 0,
+        variety: item.variety || undefined,
+      }
+    })
+
+    // Create order FIRST (status: pending) before creating Stripe session
+    // Use a temporary sessionId that will be replaced
+    const tempSessionId = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    
+    const order = await db.createOrder({
+      stripeSessionId: tempSessionId, // Temporary, will be updated after session creation
+      customerEmail: undefined, // Will be updated from Stripe
+      customerPhone: undefined, // Will be updated from Stripe
+      items: orderItems,
+      total: total,
+      currency: 'eur',
+      status: 'pending', // Start as pending, will be updated by webhook or redirect
+      completedAt: undefined,
+    })
+
+    // Create Stripe Checkout Session with orderId in client_reference_id
     const session = await stripe.checkout.sessions.create({
+      client_reference_id: order.id, // Link Stripe session to our order
       payment_method_types: ['card'],
       line_items: finalLineItems,
       mode: 'payment',
@@ -151,7 +189,17 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ sessionId: session.id, url: session.url })
+    // Update order with stripeSessionId
+    await db.updateOrder(order.id, {
+      stripeSessionId: session.id,
+    })
+
+    return NextResponse.json({ 
+      sessionId: session.id, 
+      url: session.url,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+    })
   } catch (error: any) {
     console.error('Error creating checkout session:', error)
     return NextResponse.json(

@@ -45,43 +45,94 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
     if (sessionIdParam) {
       setSessionId(sessionIdParam)
       
-      // Retry mechanism to fetch order (webhook might take a moment to process)
-      let attempts = 0
-      const maxAttempts = 10
-      const retryDelay = 1000 // 1 second
-      
       const fetchOrder = async () => {
         try {
+          // Fetch order by sessionId (order should exist immediately with new flow)
           const res = await fetch(`/api/orders?sessionId=${sessionIdParam}`)
           const data = await res.json()
           
           if (data.order && data.order.orderNumber) {
-            setOrderInfo({
-              orderNumber: data.order.orderNumber,
-              status: data.order.status,
-            })
-            setLoading(false)
-            // Clear any pending retries
-            if (retryTimeoutRef.current) {
-              clearTimeout(retryTimeoutRef.current)
-              retryTimeoutRef.current = null
+            // Order found - check if it needs status update
+            if (data.order.status === 'pending') {
+              // Order is pending - update status (handles race condition with webhook)
+              // If webhook already completed it, this will be a no-op
+              try {
+                const updateRes = await fetch(`/api/orders/${data.order.id}/update-status`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ sessionId: sessionIdParam }),
+                })
+                const updateData = await updateRes.json()
+                
+                // Use updated order if available
+                if (updateData.order) {
+                  setOrderInfo({
+                    orderNumber: updateData.order.orderNumber,
+                    status: updateData.order.status,
+                  })
+                } else {
+                  setOrderInfo({
+                    orderNumber: data.order.orderNumber,
+                    status: data.order.status,
+                  })
+                }
+              } catch (updateErr) {
+                console.error('Error updating order status:', updateErr)
+                // Still show order info even if update fails
+                setOrderInfo({
+                  orderNumber: data.order.orderNumber,
+                  status: data.order.status,
+                })
+              }
+            } else {
+              // Order already completed (webhook got there first)
+              setOrderInfo({
+                orderNumber: data.order.orderNumber,
+                status: data.order.status,
+              })
             }
-          } else if (attempts < maxAttempts) {
-            // Order not created yet, retry after delay
-            attempts++
-            retryTimeoutRef.current = setTimeout(fetchOrder, retryDelay)
-          } else {
-            // Max attempts reached, stop loading
             setLoading(false)
+          } else {
+            // Order not found - retry a few times (shouldn't happen with new flow)
+            let attempts = 0
+            const maxAttempts = 3
+            const retryDelay = 1000
+            
+            const retryFetch = async () => {
+              if (attempts >= maxAttempts) {
+                setLoading(false)
+                return
+              }
+              
+              attempts++
+              await new Promise(resolve => setTimeout(resolve, retryDelay))
+              
+              try {
+                const retryRes = await fetch(`/api/orders?sessionId=${sessionIdParam}`)
+                const retryData = await retryRes.json()
+                
+                if (retryData.order && retryData.order.orderNumber) {
+                  setOrderInfo({
+                    orderNumber: retryData.order.orderNumber,
+                    status: retryData.order.status,
+                  })
+                  setLoading(false)
+                } else {
+                  retryFetch()
+                }
+              } catch (err) {
+                console.error('Error retrying order fetch:', err)
+                retryFetch()
+              }
+            }
+            
+            retryFetch()
           }
         } catch (err) {
           console.error('Error fetching order:', err)
-          if (attempts < maxAttempts) {
-            attempts++
-            retryTimeoutRef.current = setTimeout(fetchOrder, retryDelay)
-          } else {
-            setLoading(false)
-          }
+          setLoading(false)
         }
       }
       
