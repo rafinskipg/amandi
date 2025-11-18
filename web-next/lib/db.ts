@@ -1,6 +1,6 @@
 // PostgreSQL database using Prisma
 import { prisma } from './prisma'
-import type { OrderStatus, EventType, StatusLogType } from '@prisma/client'
+import type { OrderStatus, EventType } from '@prisma/client'
 
 export interface Order {
   id: string
