@@ -10,26 +10,49 @@ export default function DashboardPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is authenticated (mock login)
+    // Check if user is authenticated
     const authStatus = sessionStorage.getItem('dashboard_auth')
-    if (authStatus === 'authenticated') {
+    const token = sessionStorage.getItem('admin_token')
+    if (authStatus === 'authenticated' && token) {
       setIsAuthenticated(true)
+    } else {
+      // Clear invalid auth
+      sessionStorage.removeItem('dashboard_auth')
+      sessionStorage.removeItem('admin_token')
     }
     setIsLoading(false)
   }, [])
 
-  const handleLogin = (password: string) => {
-    // Mock login - in production, this would be a real authentication
-    if (password === 'admin' || password === 'amandi2024') {
+  const handleLogin = async (password: string) => {
+    try {
+      const response = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(data.error || 'Invalid password')
+        return
+      }
+
+      // Store token
+      sessionStorage.setItem('admin_token', data.token)
       sessionStorage.setItem('dashboard_auth', 'authenticated')
       setIsAuthenticated(true)
-    } else {
-      alert('Invalid password')
+    } catch (error) {
+      console.error('Login error:', error)
+      alert('Login failed. Please try again.')
     }
   }
 
   const handleLogout = () => {
     sessionStorage.removeItem('dashboard_auth')
+    sessionStorage.removeItem('admin_token')
     setIsAuthenticated(false)
     router.push('/')
   }

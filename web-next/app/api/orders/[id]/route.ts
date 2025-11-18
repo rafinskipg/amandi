@@ -1,11 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAdminAuth } from '@/lib/admin-middleware'
+
+// Get order by ID
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  // Require admin authentication
+  const authError = await requireAdminAuth(request)
+  if (authError) {
+    return authError
+  }
+
+  try {
+    const { id } = await params
+    const order = await db.getOrder(id)
+
+    if (!order) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ order })
+  } catch (error: any) {
+    console.error('Error fetching order:', error)
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch order' },
+      { status: 500 }
+    )
+  }
+}
 
 // Update order status
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Require admin authentication
+  const authError = await requireAdminAuth(request)
+  if (authError) {
+    return authError
+  }
+
   try {
     const { id } = await params
     const { status } = await request.json()

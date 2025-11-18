@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAdminAuth } from '@/lib/admin-middleware'
 
 /**
  * GET - Get delivery sticker data for an order
@@ -9,6 +10,12 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Require admin authentication
+  const authError = await requireAdminAuth(request)
+  if (authError) {
+    return authError
+  }
+
   try {
     const { id } = await params
     const order = await db.getOrder(id)

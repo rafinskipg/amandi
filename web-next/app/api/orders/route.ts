@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAdminAuth } from '@/lib/admin-middleware'
 
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const sessionId = searchParams.get('sessionId')
+  const { searchParams } = new URL(request.url)
+  const sessionId = searchParams.get('sessionId')
 
-    // If sessionId is provided, return single order (for checkout success page)
-    if (sessionId) {
+  // If sessionId is provided, return single order (public endpoint for checkout success page)
+  if (sessionId) {
+    try {
       const order = await db.getOrderBySessionId(sessionId)
       if (!order) {
         return NextResponse.json(
@@ -16,7 +17,22 @@ export async function GET(request: NextRequest) {
         )
       }
       return NextResponse.json({ order })
+    } catch (error: any) {
+      console.error('Error fetching order by sessionId:', error)
+      return NextResponse.json(
+        { error: error.message || 'Failed to fetch order' },
+        { status: 500 }
+      )
     }
+  }
+
+  // Require admin authentication for listing orders
+  const authError = await requireAdminAuth(request)
+  if (authError) {
+    return authError
+  }
+
+  try {
 
     const status = searchParams.get('status') as any
     const search = searchParams.get('search') || undefined

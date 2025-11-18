@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAdminAuth } from '@/lib/admin-middleware'
 
 /**
  * POST - Handle order actions (return, reship, mark as customer contacted)
@@ -8,6 +9,12 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Require admin authentication
+  const authError = await requireAdminAuth(request)
+  if (authError) {
+    return authError
+  }
+
   try {
     const { id } = await params
     const { action, description, metadata } = await request.json()
@@ -104,7 +111,7 @@ export async function POST(
         )
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       log: statusLog,
       message: `Order ${action} action completed successfully`

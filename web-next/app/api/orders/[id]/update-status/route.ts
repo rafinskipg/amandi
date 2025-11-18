@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+// Note: This endpoint is public (used by checkout success page)
 
 /**
  * Endpoint to update order status from redirect page
@@ -31,9 +32,9 @@ export async function POST(
 
     // If order is already completed (webhook got there first), return success
     if (order.status === 'completed') {
-      return NextResponse.json({ 
+      return NextResponse.json({
         order,
-        message: 'Order already completed by webhook' 
+        message: 'Order already completed by webhook'
       })
     }
 
@@ -43,9 +44,9 @@ export async function POST(
         stripeSessionId: sessionId,
       })
       if (updatedWithSession) {
-        return NextResponse.json({ 
+        return NextResponse.json({
           order: updatedWithSession,
-          message: 'Order sessionId updated' 
+          message: 'Order sessionId updated'
         })
       }
     }
@@ -53,9 +54,9 @@ export async function POST(
     // Order is pending and sessionId is set - just return it
     // Webhook will update it to completed when it arrives
     // Don't change status here to avoid race conditions
-    return NextResponse.json({ 
+    return NextResponse.json({
       order,
-      message: 'Order is pending, waiting for webhook to complete' 
+      message: 'Order is pending, waiting for webhook to complete'
     })
   } catch (error: any) {
     console.error('Error updating order status:', error)

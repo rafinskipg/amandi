@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAdminAuth } from '@/lib/admin-middleware'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Require admin authentication
+  const authError = await requireAdminAuth(request)
+  if (authError) {
+    return authError
+  }
+
   try {
     const { id } = await params
     const { trackingNumber, carrier, itemIds } = await request.json()
@@ -37,6 +44,12 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Require admin authentication
+  const authError = await requireAdminAuth(request)
+  if (authError) {
+    return authError
+  }
+
   try {
     const { id } = await params
     const shipments = await db.getShipmentsByOrderId(id)

@@ -1,7 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import styles from './Dashboard.module.css'
+import { adminFetch } from '@/lib/admin-fetch'
 
 interface Metrics {
   totalOrders: number
@@ -81,6 +84,13 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onLogout }: DashboardProps) {
+  const router = useRouter()
+
+  // Handle unauthorized errors
+  const handleUnauthorized = () => {
+    onLogout()
+    router.push('/dashboard')
+  }
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [ordersResponse, setOrdersResponse] = useState<OrdersResponse>({
     orders: [],
@@ -114,7 +124,10 @@ export default function Dashboard({ onLogout }: DashboardProps) {
 
   const fetchData = async () => {
     try {
-      const metricsRes = await fetch('/api/metrics')
+      const metricsRes = await adminFetch('/api/metrics', {}, handleUnauthorized)
+      if (!metricsRes.ok) {
+        throw new Error('Failed to fetch metrics')
+      }
       const metricsData = await metricsRes.json()
       setMetrics(metricsData.metrics)
       setLoading(false)
@@ -147,9 +160,9 @@ export default function Dashboard({ onLogout }: DashboardProps) {
   const fetchOrderDetails = async (orderId: string) => {
     try {
       const [shipmentsRes, messagesRes, statusLogsRes] = await Promise.all([
-        fetch(`/api/orders/${orderId}/shipments`),
-        fetch(`/api/orders/${orderId}/messages`),
-        fetch(`/api/orders/${orderId}/status-logs`),
+        adminFetch(`/api/orders/${orderId}/shipments`, {}, handleUnauthorized),
+        adminFetch(`/api/orders/${orderId}/messages`, {}, handleUnauthorized),
+        adminFetch(`/api/orders/${orderId}/status-logs`, {}, handleUnauthorized),
       ])
       const shipmentsData = await shipmentsRes.json()
       const messagesData = await messagesRes.json()
@@ -193,7 +206,7 @@ export default function Dashboard({ onLogout }: DashboardProps) {
 
     setCreatingShipment(orderId)
     try {
-      const response = await fetch(`/api/orders/${orderId}/shipments`, {
+      const response = await adminFetch(`/api/orders/${orderId}/shipments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -203,14 +216,14 @@ export default function Dashboard({ onLogout }: DashboardProps) {
           carrier: carrier[orderId] || undefined,
           itemIds,
         }),
-      })
+      }, handleUnauthorized)
 
       if (!response.ok) {
         throw new Error('Failed to create shipment')
       }
 
       // Create status log for shipment
-      await fetch(`/api/orders/${orderId}/actions`, {
+      await adminFetch(`/api/orders/${orderId}/actions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -223,7 +236,7 @@ export default function Dashboard({ onLogout }: DashboardProps) {
             carrier: carrier[orderId],
           },
         }),
-      })
+      }, handleUnauthorized)
 
       // Refresh order details and orders list
       await fetchOrderDetails(orderId)
@@ -248,7 +261,7 @@ export default function Dashboard({ onLogout }: DashboardProps) {
 
     setSendingMessage(orderId)
     try {
-      const response = await fetch(`/api/orders/${orderId}/messages`, {
+      const response = await adminFetch(`/api/orders/${orderId}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -257,7 +270,7 @@ export default function Dashboard({ onLogout }: DashboardProps) {
           message,
           isIncident,
         }),
-      })
+      }, handleUnauthorized)
 
       if (!response.ok) {
         throw new Error('Failed to send message')
@@ -291,7 +304,7 @@ export default function Dashboard({ onLogout }: DashboardProps) {
         params.append('search', searchQuery.trim())
       }
 
-      const ordersRes = await fetch(`/api/orders?${params}`)
+      const ordersRes = await adminFetch(`/api/orders?${params}`, {}, handleUnauthorized)
       const ordersData = await ordersRes.json()
       setOrdersResponse(ordersData)
     } catch (error) {
@@ -309,13 +322,13 @@ export default function Dashboard({ onLogout }: DashboardProps) {
     try {
       const order = ordersResponse.orders.find(o => o.id === orderId)
       
-      const response = await fetch(`/api/orders/${orderId}`, {
+      const response = await adminFetch(`/api/orders/${orderId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status: newStatus }),
-      })
+      }, handleUnauthorized)
 
       if (!response.ok) {
         throw new Error('Failed to update order')
@@ -343,13 +356,13 @@ export default function Dashboard({ onLogout }: DashboardProps) {
       }
       
       if (newStatus === 'delivered') {
-        await fetch(`/api/orders/${orderId}/actions`, {
+        await adminFetch(`/api/orders/${orderId}/actions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ action: 'delivered' }),
-        })
+        }, handleUnauthorized)
       }
 
       // Refresh orders, order details, and metrics
@@ -367,13 +380,13 @@ export default function Dashboard({ onLogout }: DashboardProps) {
   const handleOrderAction = async (orderId: string, action: 'return' | 'reship' | 'customer_contacted') => {
     setProcessingAction(`${orderId}-${action}`)
     try {
-      const response = await fetch(`/api/orders/${orderId}/actions`, {
+      const response = await adminFetch(`/api/orders/${orderId}/actions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ action }),
-      })
+      }, handleUnauthorized)
 
       if (!response.ok) {
         throw new Error('Failed to process action')
@@ -392,7 +405,7 @@ export default function Dashboard({ onLogout }: DashboardProps) {
 
   const handleGenerateSticker = async (orderId: string) => {
     try {
-      const response = await fetch(`/api/orders/${orderId}/delivery-sticker`)
+      const response = await adminFetch(`/api/orders/${orderId}/delivery-sticker`, {}, handleUnauthorized)
       const data = await response.json()
 
       if (!response.ok) {
@@ -657,7 +670,11 @@ export default function Dashboard({ onLogout }: DashboardProps) {
                       <div key={order.id} className={styles.orderCard}>
                         <div className={styles.orderHeader}>
                           <div>
-                            <h3 className={styles.orderId}>Order {order.orderNumber}</h3>
+                            <h3 className={styles.orderId}>
+                              <Link href={`/dashboard/orders/${order.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                                Order {order.orderNumber}
+                              </Link>
+                            </h3>
                             {order.customerEmail && (
                               <p className={styles.orderEmail}>📧 {order.customerEmail}</p>
                             )}
