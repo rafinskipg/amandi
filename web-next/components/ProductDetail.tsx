@@ -294,7 +294,7 @@ export default function ProductDetail({ product, translations }: Props) {
               )}
 
               <div className={styles.description}>
-                <h2>{translations.productDetail?.selectVariety ? translations.productDetail.selectVariety.replace('variety', 'Description') : (lang === 'es' ? 'Descripción' : 'Description')}</h2>
+                <h2>{lang === 'es' ? 'Descripción' : lang === 'fr' ? 'Description' : lang === 'pt' ? 'Descrição' : lang === 'de' ? 'Beschreibung' : lang === 'nl' ? 'Beschrijving' : lang === 'da' ? 'Beskrivelse' : lang === 'sv' ? 'Beskrivning' : lang === 'fi' ? 'Kuvaus' : lang === 'no' ? 'Beskrivelse' : 'Description'}</h2>
                 <p>{description}</p>
               </div>
 

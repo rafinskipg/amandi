@@ -41,21 +41,32 @@ export default function CheckoutPage() {
     }
   }, [selectedCountry])
 
-  // Detect language
-  const langMatch = pathname.match(/^\/([a-z]{2})/)
-  const lang: 'es' | 'en' = (langMatch && (langMatch[1] === 'es' || langMatch[1] === 'en')) ? langMatch[1] : 'en'
+  // Detect language - support all languages
+  const langMatch = pathname.match(/^\/(es|en|pt|fr|de|nl|da|sv|fi|no)/)
+  const lang = (langMatch ? langMatch[1] : 'en') as 'es' | 'en' | 'pt' | 'fr' | 'de' | 'nl' | 'da' | 'sv' | 'fi' | 'no'
   const t: Translations = getTranslations(lang)
-  const isSpanish = t === es
 
   const formatPrice = (price: number, currency: string = 'EUR') => {
-    return new Intl.NumberFormat(isSpanish ? 'es-ES' : 'en-GB', {
+    const localeMap: Record<string, string> = {
+      es: 'es-ES',
+      en: 'en-GB',
+      pt: 'pt-PT',
+      fr: 'fr-FR',
+      de: 'de-DE',
+      nl: 'nl-NL',
+      da: 'da-DK',
+      sv: 'sv-SE',
+      fi: 'fi-FI',
+      no: 'no-NO',
+    }
+    return new Intl.NumberFormat(localeMap[lang] || 'en-GB', {
       style: 'currency',
       currency: currency,
     }).format(price)
   }
 
   const getProductTitle = (product: any) => {
-    return product.title?.[lang] || product.title?.en || 'Product'
+    return product.title?.[lang] || product.title?.en || product.title?.es || 'Product'
   }
 
   const subtotal = getTotalPrice()
@@ -87,14 +98,14 @@ export default function CheckoutPage() {
       warnings.push({
         variety: 'hass',
         inSeason: isVarietyInSeason('hass'),
-        season: getSeasonDescription('hass', lang),
+        season: getSeasonDescription('hass', lang === 'es' ? 'es' : 'en'),
       })
     }
     if (hasLambHass) {
       warnings.push({
         variety: 'lamb-hass',
         inSeason: isVarietyInSeason('lamb-hass'),
-        season: getSeasonDescription('lamb-hass', lang),
+        season: getSeasonDescription('lamb-hass', lang === 'es' ? 'es' : 'en'),
       })
     }
 
@@ -114,11 +125,10 @@ export default function CheckoutPage() {
 
   const getVarietyDisplayName = (variety?: AvocadoVariety): string => {
     if (!variety) return ''
-    const isSpanish = lang === 'es'
     if (variety === 'hass') {
-      return isSpanish ? 'Hass' : 'Hass'
+      return 'Hass'
     }
-    return isSpanish ? 'Lamb Hass' : 'Lamb Hass'
+    return 'Lamb Hass'
   }
 
   const handleCompleteCheckout = async () => {
@@ -442,18 +452,12 @@ export default function CheckoutPage() {
 
                       {hasSubscription && (
                         <p className={styles.subscriptionShippingNote}>
-                          {isSpanish 
-                            ? 'La suscripción incluye 2 envíos (uno para cada temporada)'
-                            : 'Subscription includes 2 shipments (one for each season)'
-                          }
+                          {lang === 'es' ? 'La suscripción incluye 2 envíos (uno para cada temporada)' : lang === 'fr' ? 'L\'abonnement comprend 2 expéditions (une pour chaque saison)' : lang === 'pt' ? 'A subscrição inclui 2 envios (um para cada temporada)' : lang === 'de' ? 'Das Abonnement umfasst 2 Sendungen (eine für jede Saison)' : lang === 'nl' ? 'Het abonnement omvat 2 verzendingen (één voor elk seizoen)' : lang === 'da' ? 'Abonnementet inkluderer 2 forsendelser (én for hver sæson)' : lang === 'sv' ? 'Prenumerationen inkluderar 2 leveranser (en för varje säsong)' : lang === 'fi' ? 'Tilaus sisältää 2 lähetystä (yksi jokaiselle kaudelle)' : lang === 'no' ? 'Abonnementet inkluderer 2 forsendelser (én for hver sesong)' : 'Subscription includes 2 shipments (one for each season)'}
                         </p>
                       )}
                       {shippingInfo?.freeShippingThreshold && subtotal < shippingInfo.freeShippingThreshold && !hasSubscription && (
                         <p className={styles.freeShippingNote}>
-                          {isSpanish 
-                            ? `Añade ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} más para envío gratis`
-                            : `Add ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} more for free shipping`
-                          }
+                          {lang === 'es' ? `Añade ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} más para envío gratis` : lang === 'fr' ? `Ajoutez ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} de plus pour la livraison gratuite` : lang === 'pt' ? `Adicione ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} mais para envio grátis` : lang === 'de' ? `Fügen Sie ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} hinzu für kostenlosen Versand` : lang === 'nl' ? `Voeg ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} toe voor gratis verzending` : lang === 'da' ? `Tilføj ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} mere for gratis forsendelse` : lang === 'sv' ? `Lägg till ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} till för gratis leverans` : lang === 'fi' ? `Lisää ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} enemmän ilmaiseen toimitukseen` : lang === 'no' ? `Legg til ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} mer for gratis frakt` : `Add ${formatPrice(shippingInfo.freeShippingThreshold - subtotal)} more for free shipping`}
                         </p>
                       )}
                     </>
@@ -475,15 +479,13 @@ export default function CheckoutPage() {
                     <div className={styles.seasonWarning}>
                       <span className={styles.warningIcon}>📅</span>
                       <div className={styles.warningContent}>
-                        <strong>{isSpanish ? 'Preorden - Fuera de temporada' : 'Preorder - Out of season'}</strong>
+                        <strong>{lang === 'es' ? 'Preorden - Fuera de temporada' : lang === 'fr' ? 'Précommande - Hors saison' : lang === 'pt' ? 'Pré-encomenda - Fora de temporada' : lang === 'de' ? 'Vorbestellung - Außerhalb der Saison' : lang === 'nl' ? 'Pre-order - Buiten het seizoen' : lang === 'da' ? 'Forudbestilling - Uden for sæsonen' : lang === 'sv' ? 'Förbeställning - Utanför säsongen' : lang === 'fi' ? 'Ennakkotilaus - Kauden ulkopuolella' : lang === 'no' ? 'Forhåndsbestilling - Utenfor sesongen' : 'Preorder - Out of season'}</strong>
                         <p>
-                          {isSpanish 
-                            ? 'Algunas cajas en tu pedido están fuera de temporada. Las enviaremos cuando llegue el momento de la temporada.'
-                            : 'Some boxes in your order are out of season. We will ship them when the season arrives.'}
+                          {lang === 'es' ? 'Algunas cajas en tu pedido están fuera de temporada. Las enviaremos cuando llegue el momento de la temporada.' : lang === 'fr' ? 'Certaines caisses de votre commande sont hors saison. Nous les expédierons lorsque la saison arrivera.' : lang === 'pt' ? 'Algumas caixas no seu pedido estão fora de temporada. Enviá-las-emos quando chegar a temporada.' : lang === 'de' ? 'Einige Kisten in Ihrer Bestellung sind außerhalb der Saison. Wir werden sie versenden, wenn die Saison kommt.' : lang === 'nl' ? 'Sommige dozen in uw bestelling zijn buiten het seizoen. We zullen ze verzenden wanneer het seizoen arriveert.' : lang === 'da' ? 'Nogle kasser i din ordre er uden for sæsonen. Vi sender dem, når sæsonen ankommer.' : lang === 'sv' ? 'Några lådor i din beställning är utanför säsongen. Vi skickar dem när säsongen kommer.' : lang === 'fi' ? 'Jotkut laatikot tilauksessasi ovat kauden ulkopuolella. Lähetämme ne, kun kausi saapuu.' : lang === 'no' ? 'Noen bokser i bestillingen din er utenfor sesongen. Vi sender dem når sesongen kommer.' : 'Some boxes in your order are out of season. We will ship them when the season arrives.'}
                         </p>
                         {seasonWarnings.filter(w => !w.inSeason).map(w => (
                           <p key={w.variety} className={styles.seasonDetail}>
-                            {getVarietyDisplayName(w.variety)}: {isSpanish ? 'Temporada' : 'Season'} {w.season}
+                            {getVarietyDisplayName(w.variety)}: {lang === 'es' ? 'Temporada' : lang === 'fr' ? 'Saison' : lang === 'pt' ? 'Temporada' : lang === 'de' ? 'Saison' : lang === 'nl' ? 'Seizoen' : lang === 'da' ? 'Sæson' : lang === 'sv' ? 'Säsong' : lang === 'fi' ? 'Kausi' : lang === 'no' ? 'Sesong' : 'Season'} {w.season}
                           </p>
                         ))}
                       </div>
@@ -495,11 +497,9 @@ export default function CheckoutPage() {
                     <div className={styles.multiShipmentWarning}>
                       <span className={styles.warningIcon}>📦</span>
                       <div className={styles.warningContent}>
-                        <strong>{isSpanish ? 'Múltiples envíos requeridos' : 'Multiple shipments required'}</strong>
+                        <strong>{lang === 'es' ? 'Múltiples envíos requeridos' : lang === 'fr' ? 'Expéditions multiples requises' : lang === 'pt' ? 'Múltiplos envios necessários' : lang === 'de' ? 'Mehrere Sendungen erforderlich' : lang === 'nl' ? 'Meerdere verzendingen vereist' : lang === 'da' ? 'Flere forsendelser påkrævet' : lang === 'sv' ? 'Flera leveranser krävs' : lang === 'fi' ? 'Useita lähetyksiä vaaditaan' : lang === 'no' ? 'Flere forsendelser påkrevd' : 'Multiple shipments required'}</strong>
                         <p>
-                          {isSpanish
-                            ? 'Tu pedido contiene ambas variedades (Hass y Lamb Hass) que tienen temporadas diferentes. Necesitaremos hacer 2 envíos separados. Te contactaremos para coordinar los envíos.'
-                            : 'Your order contains both varieties (Hass and Lamb Hass) which have different seasons. We will need to make 2 separate shipments. We will contact you to coordinate the shipments.'}
+                          {lang === 'es' ? 'Tu pedido contiene ambas variedades (Hass y Lamb Hass) que tienen temporadas diferentes. Necesitaremos hacer 2 envíos separados. Te contactaremos para coordinar los envíos.' : lang === 'fr' ? 'Votre commande contient les deux variétés (Hass et Lamb Hass) qui ont des saisons différentes. Nous devrons faire 2 expéditions séparées. Nous vous contacterons pour coordonner les expéditions.' : lang === 'pt' ? 'O seu pedido contém ambas as variedades (Hass e Lamb Hass) que têm temporadas diferentes. Precisaremos fazer 2 envios separados. Contactá-lo-emos para coordenar os envios.' : lang === 'de' ? 'Ihre Bestellung enthält beide Sorten (Hass und Lamb Hass), die unterschiedliche Saisons haben. Wir müssen 2 separate Sendungen vornehmen. Wir werden Sie kontaktieren, um die Sendungen zu koordinieren.' : lang === 'nl' ? 'Uw bestelling bevat beide variëteiten (Hass en Lamb Hass) die verschillende seizoenen hebben. We moeten 2 aparte verzendingen maken. We zullen contact met u opnemen om de verzendingen te coördineren.' : lang === 'da' ? 'Din ordre indeholder begge sorter (Hass og Lamb Hass), der har forskellige sæsoner. Vi bliver nødt til at foretage 2 separate forsendelser. Vi kontakter dig for at koordinere forsendelserne.' : lang === 'sv' ? 'Din beställning innehåller båda sorterna (Hass och Lamb Hass) som har olika säsonger. Vi behöver göra 2 separata leveranser. Vi kommer att kontakta dig för att koordinera leveranserna.' : lang === 'fi' ? 'Tilauksesi sisältää molemmat lajikkeet (Hass ja Lamb Hass), joilla on eri kaudet. Meidän täytyy tehdä 2 erillistä lähetystä. Otamme yhteyttä koordinoimalla lähetykset.' : lang === 'no' ? 'Bestillingen din inneholder begge sortene (Hass og Lamb Hass) som har forskjellige sesonger. Vi må gjøre 2 separate forsendelser. Vi vil kontakte deg for å koordinere forsendelsene.' : 'Your order contains both varieties (Hass and Lamb Hass) which have different seasons. We will need to make 2 separate shipments. We will contact you to coordinate the shipments.'}
                         </p>
                       </div>
                     </div>
