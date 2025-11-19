@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import type { Translations } from '@/lib/translations'
-import type { Product } from '@/lib/products'
-import { getRelatedProducts } from '@/lib/products'
+import type { Product, SupportedLanguage } from '@/lib/products'
+import { getRelatedProducts, getProductText, getProductFeatures } from '@/lib/products'
 import { es } from '@/lib/translations'
 import { useCart } from '@/context/CartContext'
 import { buildShopRoute, buildProductRoute, buildCheckoutRoute } from '@/lib/routes'
@@ -27,10 +27,13 @@ export default function ProductDetail({ product, translations }: Props) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const { addToCart } = useCart()
   
-  // Detect language
-  const langMatch = pathname.match(/^\/(en|es)/)
-  const lang = (langMatch ? langMatch[1] : 'es') as 'es' | 'en'
-  const isSpanish = lang === 'es' || translations === es
+  // Detect language from pathname - support all languages
+  const langMatch = pathname.match(/^\/(es|en|pt|fr|de|nl|da|sv|fi|no)/)
+  const lang = (langMatch ? langMatch[1] : 'en') as SupportedLanguage
+  
+  // Get translations text
+  const t = translations.productDetail || translations.shop || { selectVariety: '', varietyHass: '', varietyLambHass: '', inSeason: '', outOfSeason: '', reserveAvailable: '', productionDates: '', reservationNote: '' }
+  const shopT = translations.shop || { title: '', subtitle: '', description: '', viewAll: '', addToCart: '', inStock: '', outOfStock: '' }
 
   // Check if this is an avocado box that needs variety selection
   const isAvocadoBox = product.category === 'avocados' && product.type === 'box' && product.id !== 'subscription'
@@ -43,34 +46,43 @@ export default function ProductDetail({ product, translations }: Props) {
 
   const relatedProducts = getRelatedProducts(product.id, 4)
 
-  const title = product.title[lang] || product.title.en
-  let description = product.description[lang] || product.description.en
+  const title = getProductText(product, lang, 'title')
+  let description = getProductText(product, lang, 'description')
   
   // Add production dates to description for avocado boxes
   if (isAvocadoBox) {
-    const t = translations.variedades
-    const hassDates = t.hass.temporada
-    const lambHassDates = t.lambHass.temporada
-    const reservationNote = translations.productDetail?.reservationNote || ''
+    const variedadesT = translations.variedades
+    const hassDates = variedadesT.hass.temporada
+    const lambHassDates = variedadesT.lambHass.temporada
+    const productionDatesLabel = t.productionDates || (lang === 'es' ? 'Fechas de producción' : 'Production dates')
+    const reservationNote = t.reservationNote || ''
     
-    if (lang === 'es') {
-      description += ` ${translations.productDetail?.productionDates || 'Fechas de producción'}: Hass (${hassDates}), Lamb Hass (${lambHassDates}). ${reservationNote}`
-    } else {
-      description += ` ${translations.productDetail?.productionDates || 'Production dates'}: Hass (${hassDates}), Lamb Hass (${lambHassDates}). ${reservationNote}`
-    }
+    description += ` ${productionDatesLabel}: Hass (${hassDates}), Lamb Hass (${lambHassDates}). ${reservationNote}`
   }
   
-  const features = product.features ? (product.features[lang] || product.features.en || []) : []
+  const features = getProductFeatures(product, lang)
 
   const formatPrice = (price: number, currency: string = 'EUR') => {
-    return new Intl.NumberFormat(lang === 'es' ? 'es-ES' : 'en-GB', {
+    const localeMap: Record<SupportedLanguage, string> = {
+      es: 'es-ES',
+      en: 'en-GB',
+      pt: 'pt-PT',
+      fr: 'fr-FR',
+      de: 'de-DE',
+      nl: 'nl-NL',
+      da: 'da-DK',
+      sv: 'sv-SE',
+      fi: 'fi-FI',
+      no: 'no-NO',
+    }
+    return new Intl.NumberFormat(localeMap[lang] || 'en-GB', {
       style: 'currency',
       currency: currency,
     }).format(price)
   }
 
   const getProductTitle = (p: Product) => {
-    return p.title[lang] || p.title.en
+    return getProductText(p, lang, 'title')
   }
 
   const handleCheckout = async () => {
@@ -198,7 +210,7 @@ export default function ProductDetail({ product, translations }: Props) {
       <section className={styles.section}>
         <div className="container">
           <div className={styles.breadcrumb}>
-            <Link href={buildShopRoute(pathname)}>{isSpanish ? 'Tienda' : 'Shop'}</Link>
+            <Link href={buildShopRoute(pathname)}>{lang === 'es' ? 'Tienda' : lang === 'fr' ? 'Boutique' : lang === 'pt' ? 'Loja' : lang === 'de' ? 'Shop' : 'Shop'}</Link>
             <span> / </span>
             <span>{title}</span>
           </div>
@@ -268,7 +280,7 @@ export default function ProductDetail({ product, translations }: Props) {
                   </>
                 ) : (
                   <span className={styles.priceFrom}>
-                    {isSpanish ? 'Precio a consultar' : 'Price on request'}
+                    {translations.checkout?.priceOnRequest || (lang === 'es' ? 'Precio a consultar' : 'Price on request')}
                   </span>
                 )}
               </div>
@@ -276,19 +288,19 @@ export default function ProductDetail({ product, translations }: Props) {
               {product.inStock && (
                 <div className={styles.stockStatus}>
                   <span className={styles.inStock}>
-                    ✓ {isSpanish ? 'En stock' : 'In stock'}
+                    ✓ {shopT.inStock || (lang === 'es' ? 'En stock' : 'In stock')}
                   </span>
                 </div>
               )}
 
               <div className={styles.description}>
-                <h2>{isSpanish ? 'Descripción' : 'Description'}</h2>
+                <h2>{translations.productDetail?.selectVariety ? translations.productDetail.selectVariety.replace('variety', 'Description') : (lang === 'es' ? 'Descripción' : 'Description')}</h2>
                 <p>{description}</p>
               </div>
 
               {features.length > 0 && (
                 <div className={styles.features}>
-                  <h2>{isSpanish ? 'Características' : 'Features'}</h2>
+                  <h2>{lang === 'es' ? 'Características' : lang === 'fr' ? 'Caractéristiques' : lang === 'de' ? 'Eigenschaften' : lang === 'pt' ? 'Características' : 'Features'}</h2>
                   <ul>
                     {features.map((feature, index) => (
                       <li key={index}>{feature}</li>
@@ -299,7 +311,7 @@ export default function ProductDetail({ product, translations }: Props) {
 
               {isAvocadoBox && (
                 <div className={styles.varietySelector}>
-                  <h2>{translations.productDetail?.selectVariety || (isSpanish ? 'Selecciona la variedad' : 'Select variety')}</h2>
+                  <h2>{t.selectVariety || (lang === 'es' ? 'Selecciona la variedad' : 'Select variety')}</h2>
                   <div className={styles.varietyOptions}>
                     {(['hass', 'lamb-hass'] as AvocadoVariety[]).map((variety) => {
                       const isInSeason = isVarietyInSeason(variety)
@@ -319,14 +331,14 @@ export default function ProductDetail({ product, translations }: Props) {
                             <span className={styles.varietyName}>{varietyName}</span>
                             <span className={`${styles.varietyStatus} ${isInSeason ? styles.inSeason : styles.outOfSeason}`}>
                               {isInSeason 
-                                ? (translations.productDetail?.inSeason || (isSpanish ? 'En temporada' : 'In season'))
-                                : (translations.productDetail?.outOfSeason || (isSpanish ? 'Fuera de temporada' : 'Out of season'))
+                                ? (t.inSeason || (lang === 'es' ? 'En temporada' : 'In season'))
+                                : (t.outOfSeason || (lang === 'es' ? 'Fuera de temporada' : 'Out of season'))
                               }
                             </span>
                           </div>
                           {!isInSeason && (
                             <span className={styles.reserveNote}>
-                              {translations.productDetail?.reserveAvailable || (isSpanish ? 'Puedes reservarlo' : 'You can reserve it')}
+                              {t.reserveAvailable || (lang === 'es' ? 'Puedes reservarlo' : 'You can reserve it')}
                             </span>
                           )}
                         </button>
@@ -338,7 +350,7 @@ export default function ProductDetail({ product, translations }: Props) {
 
               <div className={styles.actions}>
                 <button onClick={handleCheckout} className={styles.checkoutButton}>
-                  {isSpanish ? 'Comprar ahora' : 'Buy now'}
+                  {translations.checkout?.completeOrder ? translations.checkout.completeOrder.replace('order', 'now') : (lang === 'es' ? 'Comprar ahora' : lang === 'fr' ? 'Acheter maintenant' : lang === 'pt' ? 'Comprar agora' : lang === 'de' ? 'Jetzt kaufen' : 'Buy now')}
                 </button>
                 <div className={styles.addToCartWrapper}>
                   <button 
@@ -354,7 +366,7 @@ export default function ProductDetail({ product, translations }: Props) {
                       />
                     )}
                     <span className={styles.buttonText}>
-                      {isSpanish ? 'Añadir al carrito' : 'Add to cart'}
+                      {shopT.addToCart || (lang === 'es' ? 'Añadir al carrito' : lang === 'fr' ? 'Ajouter au panier' : lang === 'pt' ? 'Adicionar ao carrinho' : lang === 'de' ? 'In den Warenkorb' : 'Add to cart')}
                     </span>
                   </button>
                 </div>
@@ -362,7 +374,7 @@ export default function ProductDetail({ product, translations }: Props) {
               
               <div className={styles.viewCartLink}>
                 <Link href={buildCheckoutRoute(pathname)} className={styles.viewCart}>
-                  {isSpanish ? 'Ver carrito' : 'View cart'}
+                  {lang === 'es' ? 'Ver carrito' : lang === 'fr' ? 'Voir le panier' : lang === 'pt' ? 'Ver carrinho' : lang === 'de' ? 'Warenkorb anzeigen' : 'View cart'}
                 </Link>
               </div>
             </div>
@@ -373,8 +385,8 @@ export default function ProductDetail({ product, translations }: Props) {
             <div className={styles.relatedSection}>
               <h2 className={styles.relatedTitle}>
                 {product.type === 'box' 
-                  ? (isSpanish ? 'También te puede interesar' : 'You may also like')
-                  : (isSpanish ? 'Productos relacionados' : 'Related products')
+                  ? (lang === 'es' ? 'También te puede interesar' : lang === 'fr' ? 'Vous pourriez aussi aimer' : lang === 'pt' ? 'Também pode interessar' : lang === 'de' ? 'Das könnte Sie auch interessieren' : 'You may also like')
+                  : (lang === 'es' ? 'Productos relacionados' : lang === 'fr' ? 'Produits connexes' : lang === 'pt' ? 'Produtos relacionados' : lang === 'de' ? 'Verwandte Produkte' : 'Related products')
                 }
               </h2>
               <div className={styles.relatedGrid}>

@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import type { Translations } from '@/lib/translations'
-import { products, getProductsByCategory, type Product } from '@/lib/products'
+import { products, getProductsByCategory, type Product, SupportedLanguage, getProductText } from '@/lib/products'
 import { es } from '@/lib/translations'
 import { buildProductRoute } from '@/lib/routes'
 import LanguageSelector from './LanguageSelector'
@@ -17,19 +17,44 @@ interface Props {
 }
 
 const categories = [
-  { id: 'avocados', name: { es: 'Aguacates', en: 'Avocados' } },
-  { id: 'artisan', name: { es: 'Artesanía', en: 'Artisan' } },
-  { id: 'produce', name: { es: 'Productos frescos', en: 'Fresh produce' } },
-  { id: 'honey-nuts', name: { es: 'Miel y frutos secos', en: 'Honey & nuts' } },
+  { 
+    id: 'avocados', 
+    name: { 
+      es: 'Aguacates', en: 'Avocados', pt: 'Abacates', fr: 'Avocats', de: 'Avocados', 
+      nl: 'Avocado\'s', da: 'Avokadoer', sv: 'Avokador', fi: 'Avokadot', no: 'Avokadoer' 
+    } 
+  },
+  { 
+    id: 'artisan', 
+    name: { 
+      es: 'Artesanía', en: 'Artisan', pt: 'Artesanato', fr: 'Artisanat', de: 'Handwerk', 
+      nl: 'Ambacht', da: 'Håndværk', sv: 'Hantverk', fi: 'Käsityö', no: 'Håndverk' 
+    } 
+  },
+  { 
+    id: 'produce', 
+    name: { 
+      es: 'Productos frescos', en: 'Fresh produce', pt: 'Produtos frescos', fr: 'Produits frais', 
+      de: 'Frischwaren', nl: 'Verse producten', da: 'Friske produkter', sv: 'Färska produkter', 
+      fi: 'Tuoreet tuotteet', no: 'Ferske produkter' 
+    } 
+  },
+  { 
+    id: 'honey-nuts', 
+    name: { 
+      es: 'Miel y frutos secos', en: 'Honey & nuts', pt: 'Mel e frutos secos', fr: 'Miel et noix', 
+      de: 'Honig & Nüsse', nl: 'Honing & noten', da: 'Honning & nødder', sv: 'Honung & nötter', 
+      fi: 'Hunaja ja pähkinät', no: 'Honning og nøtter' 
+    } 
+  },
 ] as const
 
 export default function ShopPage({ translations }: Props) {
   const pathname = usePathname()
   
-  // Detect language
-  const langMatch = pathname.match(/^\/(en|es)/)
-  const lang = (langMatch ? langMatch[1] : 'es') as 'es' | 'en'
-  const isSpanish = lang === 'es' || translations === es
+  // Detect language from pathname - support all languages
+  const langMatch = pathname.match(/^\/(es|en|pt|fr|de|nl|da|sv|fi|no)/)
+  const lang = (langMatch ? langMatch[1] : 'en') as SupportedLanguage
 
   const t = translations.shop || {
     title: 'Our shop',
@@ -38,18 +63,30 @@ export default function ShopPage({ translations }: Props) {
   }
 
   const formatPrice = (price: number, currency: string = 'EUR') => {
-    return new Intl.NumberFormat(lang === 'es' ? 'es-ES' : 'en-GB', {
+    const localeMap: Record<SupportedLanguage, string> = {
+      es: 'es-ES',
+      en: 'en-GB',
+      pt: 'pt-PT',
+      fr: 'fr-FR',
+      de: 'de-DE',
+      nl: 'nl-NL',
+      da: 'da-DK',
+      sv: 'sv-SE',
+      fi: 'fi-FI',
+      no: 'no-NO',
+    }
+    return new Intl.NumberFormat(localeMap[lang] || 'en-GB', {
       style: 'currency',
       currency: currency,
     }).format(price)
   }
 
   const getProductTitle = (product: Product) => {
-    return product.title[lang] || product.title.en
+    return getProductText(product, lang, 'title')
   }
 
   const getProductDescription = (product: Product) => {
-    return product.description[lang] || product.description.en
+    return getProductText(product, lang, 'description')
   }
 
   return (
@@ -73,7 +110,7 @@ export default function ShopPage({ translations }: Props) {
               return (
                 <div key={category.id} className={styles.categorySection}>
                   <h2 className={styles.categoryTitle}>
-                    {category.name[lang]}
+                    {category.name[lang] || category.name.en}
                   </h2>
                   <div className={styles.grid}>
                     {categoryProducts.map((product, index) => (
@@ -117,13 +154,13 @@ export default function ShopPage({ translations }: Props) {
                                 </>
                               ) : (
                                 <span className={styles.priceFrom}>
-                                  {isSpanish ? 'Desde' : 'From'} {formatPrice(0, product.currency)}
+                                  {lang === 'es' ? 'Desde' : lang === 'fr' ? 'À partir de' : lang === 'pt' ? 'A partir de' : lang === 'de' ? 'Ab' : 'From'} {formatPrice(0, product.currency)}
                                 </span>
                               )}
                             </div>
                             {product.inStock && (
                               <span className={styles.inStock}>
-                                ✓ {isSpanish ? 'En stock' : 'In stock'}
+                                ✓ {t.inStock || (lang === 'es' ? 'En stock' : 'In stock')}
                               </span>
                             )}
                           </div>
