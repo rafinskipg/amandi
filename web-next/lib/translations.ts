@@ -23,6 +23,8 @@ export const es = {
     preorden: {
         title: "Pre-orden europea 2025",
         copy: "Ofrecemos un sistema de pre-orden: reservas tu caja ahora y te la enviamos en el momento exacto en el que nuestros árboles dan fruta lista para cortar.",
+        boxSelectorTitle: "Elige tu caja",
+        preorderButton: "Pre-ordenar",
         howItWorks: {
             title: "Cómo funciona",
             steps: [
@@ -445,6 +447,8 @@ export const en = {
     preorden: {
         title: "European pre-order 2025",
         copy: "We offer a pre-order system: reserve your box now and we'll send it to you at the exact moment when our trees produce fruit ready to cut.",
+        boxSelectorTitle: "Choose your box",
+        preorderButton: "Pre-order",
         howItWorks: {
             title: "How it works",
             steps: [
@@ -868,6 +872,8 @@ export const pt = {
     preorden: {
         title: "Pré-encomenda europeia 2025",
         copy: "Oferecemos um sistema de pré-encomenda: reserve a sua caixa agora e enviámo-la no momento exato em que as nossas árvores dão fruta pronta para cortar.",
+        boxSelectorTitle: "Escolha a sua caixa",
+        preorderButton: "Pré-encomendar",
         howItWorks: {
             title: "Como funciona",
             steps: [
@@ -1291,6 +1297,8 @@ export const fr = {
     preorden: {
         title: "Pré-commande européenne 2025",
         copy: "Nous offrons un système de pré-commande : réservez votre caisse maintenant et nous vous l'enverrons au moment exact où nos arbres produisent des fruits prêts à être coupés.",
+        boxSelectorTitle: "Choisissez votre caisse",
+        preorderButton: "Pré-commander",
         howItWorks: {
             title: "Comment ça marche",
             steps: [

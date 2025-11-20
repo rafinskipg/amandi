@@ -7,7 +7,6 @@ import { motion } from 'framer-motion'
 import type { Translations } from '@/lib/translations'
 import type { CountryConfig } from '@/lib/countries'
 import { getCountryTranslation } from '@/lib/countryTranslations'
-import { es } from '@/lib/translations'
 import { buildProductRoute } from '@/lib/routes'
 import { products } from '@/lib/products'
 import styles from './Preorden.module.css'
@@ -40,16 +39,14 @@ export default function Preorden({ translations, country }: Props) {
   const [selectedBox, setSelectedBox] = useState(availableBoxes[0]?.value || '3kg')
   const countryT = country ? getCountryTranslation(country.code) : null
   
-  // Determine box selector title based on language
-  const isSpanish = translations === es || country?.language === 'es'
-  const boxSelectorTitle = countryT?.preorden?.boxSelectorTitle || (isSpanish ? 'Elige tu caja' : 'Choose your box')
+  // Use translations from the translations object (already language-specific)
+  const boxSelectorTitle = countryT?.preorden?.boxSelectorTitle || t.boxSelectorTitle || 'Choose your box'
+  const preorderButtonText = t.preorderButton || 'Pre-order'
 
   // Ensure selectedBox is valid (if subscription was selected but is now hidden, default to first available)
   const validSelectedBox = availableBoxes.some(box => box.value === selectedBox) 
     ? selectedBox 
     : (availableBoxes[0]?.value || '3kg')
-
-  const preorderButtonText = isSpanish ? 'Pre-ordenar' : 'Pre-order'
 
   return (
     <section className={styles.section}>
