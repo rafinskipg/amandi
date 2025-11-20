@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import Chatbot from "@/components/Chatbot";
@@ -34,6 +35,33 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      <head>
+        {/* Google tag (gtag.js) - Load with consent mode denied by default */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17745765655"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            
+            // Set consent mode to denied by default (will be updated by CookieConsent)
+            gtag('consent', 'default', {
+              'ad_storage': 'denied',
+              'ad_user_data': 'denied',
+              'ad_personalization': 'denied',
+              'analytics_storage': 'denied',
+              'functionality_storage': 'granted',
+              'personalization_storage': 'denied',
+              'security_storage': 'granted',
+            });
+            
+            gtag('config', 'AW-17745765655');
+          `}
+        </Script>
+      </head>
       <body className={`${inter.variable} ${playfair.variable} antialiased`}>
         <CartProvider>
           {children}

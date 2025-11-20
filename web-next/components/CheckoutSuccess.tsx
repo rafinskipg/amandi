@@ -17,6 +17,9 @@ interface CheckoutSuccessProps {
 interface OrderInfo {
   orderNumber: string
   status: string
+  total?: number
+  currency?: string
+  id?: string
 }
 
 export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
@@ -29,6 +32,7 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
   const [lang, setLang] = useState<'es' | 'en'>('es')
   const hasInitialized = useRef(false)
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const conversionFired = useRef(false)
 
   // Extract values once to avoid dependency issues
   const sessionIdParam = searchParams.get('session_id')
@@ -71,11 +75,17 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
                   setOrderInfo({
                     orderNumber: updateData.order.orderNumber,
                     status: updateData.order.status,
+                    total: updateData.order.total,
+                    currency: updateData.order.currency || 'EUR',
+                    id: updateData.order.id,
                   })
                 } else {
                   setOrderInfo({
                     orderNumber: data.order.orderNumber,
                     status: data.order.status,
+                    total: data.order.total,
+                    currency: data.order.currency || 'EUR',
+                    id: data.order.id,
                   })
                 }
               } catch (updateErr) {
@@ -84,6 +94,9 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
                 setOrderInfo({
                   orderNumber: data.order.orderNumber,
                   status: data.order.status,
+                  total: data.order.total,
+                  currency: data.order.currency || 'EUR',
+                  id: data.order.id,
                 })
               }
             } else {
@@ -91,6 +104,9 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
               setOrderInfo({
                 orderNumber: data.order.orderNumber,
                 status: data.order.status,
+                total: data.order.total,
+                currency: data.order.currency || 'EUR',
+                id: data.order.id,
               })
             }
             setLoading(false)
@@ -117,6 +133,9 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
                   setOrderInfo({
                     orderNumber: retryData.order.orderNumber,
                     status: retryData.order.status,
+                    total: retryData.order.total,
+                    currency: retryData.order.currency || 'EUR',
+                    id: retryData.order.id,
                   })
                   setLoading(false)
                 } else {
@@ -153,6 +172,48 @@ export default function CheckoutSuccess({ params }: CheckoutSuccessProps = {}) {
       }
     }
   }, []) // Empty dependency array - only run once on mount
+
+  // Fire Google Ads conversion event when order is confirmed
+  useEffect(() => {
+    // Only fire conversion if:
+    // 1. Order info is available
+    // 2. Order status indicates payment was received
+    // 3. Conversion hasn't been fired yet
+    // 4. User has given consent
+    // 5. gtag is available
+    if (
+      orderInfo &&
+      (orderInfo.status === 'payment_received' || orderInfo.status === 'completed' || orderInfo.status === 'delivered') &&
+      !conversionFired.current &&
+      typeof window !== 'undefined' &&
+      window.gtag
+    ) {
+      // Check if user has given consent
+      const consent = localStorage.getItem('amandi-cookie-consent')
+      if (consent === 'accepted') {
+        // Order total is stored in euros (not cents)
+        const orderValue = orderInfo.total || 0
+        const transactionId = orderInfo.id || orderInfo.orderNumber
+        
+        // Fire conversion event
+        if (window.gtag) {
+          window.gtag('event', 'conversion', {
+            'send_to': 'AW-17745765655/OdzsCPbotMMbEJfK641C',
+            'value': orderValue,
+            'currency': (orderInfo.currency || 'EUR').toUpperCase(),
+            'transaction_id': transactionId,
+          })
+          
+          conversionFired.current = true
+          console.log('Google Ads conversion event fired:', {
+            value: orderValue,
+            currency: (orderInfo.currency || 'EUR').toUpperCase(),
+            transaction_id: transactionId,
+          })
+        }
+      }
+    }
+  }, [orderInfo])
 
   const t: Translations = getTranslations(lang)
   const isSpanish = t === es

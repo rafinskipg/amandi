@@ -110,44 +110,15 @@ export default function CookieConsent() {
   }, [])
 
   const initializeGoogleTag = (hasConsent: boolean) => {
-    if (typeof window !== 'undefined') {
-      // Initialize dataLayer if it doesn't exist
-      window.dataLayer = window.dataLayer || []
-      
-      // Define gtag function
-      window.gtag = function(...args: any[]) {
-        window.dataLayer.push(args)
-      }
-
-      // Set consent mode
-      window.gtag('consent', 'default', {
+    if (typeof window !== 'undefined' && window.gtag) {
+      // Update consent mode (gtag is already loaded from layout)
+      window.gtag('consent', 'update', {
         'ad_storage': hasConsent ? 'granted' : 'denied',
         'ad_user_data': hasConsent ? 'granted' : 'denied',
         'ad_personalization': hasConsent ? 'granted' : 'denied',
         'analytics_storage': hasConsent ? 'granted' : 'denied',
-        'functionality_storage': 'granted',
         'personalization_storage': hasConsent ? 'granted' : 'denied',
-        'security_storage': 'granted',
       })
-
-      // Only load Google Tag if consent is given
-      if (hasConsent) {
-        // Load Google Tag script
-        const script = document.createElement('script')
-        script.async = true
-        script.src = 'https://www.googletagmanager.com/gtag/js?id=AW-17745765655'
-        document.head.appendChild(script)
-
-        script.onload = () => {
-          window.gtag('js', new Date())
-          window.gtag('config', 'AW-17745765655', {
-            'ad_storage': 'granted',
-            'ad_user_data': 'granted',
-            'ad_personalization': 'granted',
-            'analytics_storage': 'granted',
-          })
-        }
-      }
     }
   }
 
