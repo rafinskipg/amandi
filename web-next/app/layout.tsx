@@ -3,6 +3,7 @@ import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import Chatbot from "@/components/Chatbot";
+import CookieConsent from "@/components/CookieConsent";
 import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
@@ -38,6 +39,7 @@ export default function RootLayout({
           {children}
           <Chatbot variant="bubble" />
         </CartProvider>
+        <CookieConsent />
         <Analytics />
       </body>
     </html>
