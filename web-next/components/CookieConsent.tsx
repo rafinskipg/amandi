@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import styles from './CookieConsent.module.css'
 
 declare global {
@@ -10,9 +11,80 @@ declare global {
   }
 }
 
+type SupportedLanguage = 'es' | 'en' | 'pt' | 'fr' | 'de' | 'nl' | 'da' | 'sv' | 'fi' | 'no'
+
+const translations: Record<SupportedLanguage, { title: string; description: string; accept: string; reject: string }> = {
+  es: {
+    title: '🥑 Consentimiento de Cookies',
+    description: 'Usamos cookies para mejorar tu experiencia, analizar el tráfico del sitio y para fines de marketing. Al hacer clic en "Aceptar todas", consientes nuestro uso de cookies. También puedes rechazar las cookies no esenciales.',
+    accept: 'Aceptar todas',
+    reject: 'Rechazar',
+  },
+  en: {
+    title: '🥑 Cookie Consent',
+    description: 'We use cookies to improve your experience, analyze site traffic, and for marketing purposes. By clicking "Accept All", you consent to our use of cookies. You can also choose to reject non-essential cookies.',
+    accept: 'Accept All',
+    reject: 'Reject',
+  },
+  pt: {
+    title: '🥑 Consentimento de Cookies',
+    description: 'Usamos cookies para melhorar a sua experiência, analisar o tráfego do site e para fins de marketing. Ao clicar em "Aceitar todas", consente no nosso uso de cookies. Também pode optar por rejeitar cookies não essenciais.',
+    accept: 'Aceitar todas',
+    reject: 'Rejeitar',
+  },
+  fr: {
+    title: '🥑 Consentement aux Cookies',
+    description: 'Nous utilisons des cookies pour améliorer votre expérience, analyser le trafic du site et à des fins marketing. En cliquant sur "Tout accepter", vous consentez à notre utilisation des cookies. Vous pouvez également choisir de refuser les cookies non essentiels.',
+    accept: 'Tout accepter',
+    reject: 'Refuser',
+  },
+  de: {
+    title: '🥑 Cookie-Zustimmung',
+    description: 'Wir verwenden Cookies, um Ihre Erfahrung zu verbessern, den Website-Traffic zu analysieren und für Marketingzwecke. Durch Klicken auf "Alle akzeptieren" stimmen Sie unserer Verwendung von Cookies zu. Sie können auch wählen, nicht wesentliche Cookies abzulehnen.',
+    accept: 'Alle akzeptieren',
+    reject: 'Ablehnen',
+  },
+  nl: {
+    title: '🥑 Cookie Toestemming',
+    description: 'We gebruiken cookies om uw ervaring te verbeteren, siteverkeer te analyseren en voor marketingdoeleinden. Door op "Alles accepteren" te klikken, stemt u in met ons gebruik van cookies. U kunt er ook voor kiezen om niet-essentiële cookies te weigeren.',
+    accept: 'Alles accepteren',
+    reject: 'Weigeren',
+  },
+  da: {
+    title: '🥑 Cookie Samtykke',
+    description: 'Vi bruger cookies til at forbedre din oplevelse, analysere webstedstrafik og til marketingformål. Ved at klikke på "Acceptér alle" giver du samtykke til vores brug af cookies. Du kan også vælge at afvise ikke-essentielle cookies.',
+    accept: 'Acceptér alle',
+    reject: 'Afvis',
+  },
+  sv: {
+    title: '🥑 Cookie Medgivande',
+    description: 'Vi använder cookies för att förbättra din upplevelse, analysera webbplatsens trafik och för marknadsföringssyften. Genom att klicka på "Acceptera alla" samtycker du till vår användning av cookies. Du kan också välja att avvisa icke-essentiella cookies.',
+    accept: 'Acceptera alla',
+    reject: 'Avvisa',
+  },
+  fi: {
+    title: '🥑 Eväste Suostumus',
+    description: 'Käytämme evästeitä parantaaksemme kokemustasi, analysoimalla sivuston liikennettä ja markkinointitarkoituksiin. Klikkaamalla "Hyväksy kaikki" annat suostumuksesi evästeiden käyttöömme. Voit myös valita hylätä ei-olennaiset evästeet.',
+    accept: 'Hyväksy kaikki',
+    reject: 'Hylkää',
+  },
+  no: {
+    title: '🥑 Cookie Samtykke',
+    description: 'Vi bruker informasjonskapsler for å forbedre opplevelsen din, analysere nettstedstrafikk og for markedsføringsformål. Ved å klikke på "Godta alle" samtykker du til vår bruk av informasjonskapsler. Du kan også velge å avvise ikke-essensielle informasjonskapsler.',
+    accept: 'Godta alle',
+    reject: 'Avvis',
+  },
+}
+
 export default function CookieConsent() {
+  const pathname = usePathname()
   const [showBanner, setShowBanner] = useState(false)
   const [consentGiven, setConsentGiven] = useState<boolean | null>(null)
+
+  // Detect language from pathname
+  const langMatch = pathname.match(/^\/(es|en|pt|fr|de|nl|da|sv|fi|no)/)
+  const lang: SupportedLanguage = (langMatch ? langMatch[1] : 'en') as SupportedLanguage
+  const t = translations[lang]
 
   useEffect(() => {
     // Check if consent was already given
@@ -104,19 +176,17 @@ export default function CookieConsent() {
   return (
     <div className={styles.banner}>
       <div className={styles.content}>
+        <div className={styles.avocadoIcon}>🥑</div>
         <div className={styles.text}>
-          <h3 className={styles.title}>🍪 Cookie Consent</h3>
-          <p className={styles.description}>
-            We use cookies to improve your experience, analyze site traffic, and for marketing purposes. 
-            By clicking "Accept All", you consent to our use of cookies. You can also choose to reject non-essential cookies.
-          </p>
+          <h3 className={styles.title}>{t.title}</h3>
+          <p className={styles.description}>{t.description}</p>
         </div>
         <div className={styles.buttons}>
           <button onClick={handleReject} className={styles.rejectButton}>
-            Reject
+            {t.reject}
           </button>
           <button onClick={handleAccept} className={styles.acceptButton}>
-            Accept All
+            {t.accept}
           </button>
         </div>
       </div>
