@@ -35,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <head>
+      <body className={`${inter.variable} ${playfair.variable} antialiased`}>
         {/* Google tag (gtag.js) - Load with consent mode denied by default */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-17745765655"
@@ -61,8 +61,6 @@ export default function RootLayout({
             gtag('config', 'AW-17745765655');
           `}
         </Script>
-      </head>
-      <body className={`${inter.variable} ${playfair.variable} antialiased`}>
         <CartProvider>
           {children}
           <Chatbot variant="bubble" />
